@@ -66,7 +66,7 @@ mat SpinSystem::Tensor(vec PQ)
 ///////////////////////////////////////////////////////////////////////
 */
 void SpinSystem::GenerateNeighborList(double ExchangeCutoff, double StrayCutoff, 
-        bool PeriodicX, bool PeriodicY, bool PeriodicZ)
+        bool PeriodicX, bool PeriodicY, bool PeriodicZ, vec ax, vec ay, vec az)
 {
     
     for (int i=0; i<this->NumSite; i++)
@@ -86,105 +86,69 @@ void SpinSystem::GenerateNeighborList(double ExchangeCutoff, double StrayCutoff,
     }
     if (PeriodicX == true)
     {
-        // now try to find the long vector pointing from x_min to x_max
-        double x_min, x_max;
-        x_min = x_max = 0.0;
-        for (int i=0; i<this->NumSite; i++)
-        {
-            if (NodeList[i].Location(0) < x_min)
-                x_min = NodeList[i].Location(0);
-            if (NodeList[i].Location(0) > x_max)
-                x_max = NodeList[i].Location(0);
-        }
-        vec Xedge;
-        Xedge << x_max-x_min << 0.0 << 0.0;
         for (int i=0; i<this->NumSite; i++)
         {
             for (int j=0; j<this->NumSite; j++)
             {
-                    vec r = (NodeList[j].Location+Xedge)-(NodeList[i].Location);
+                    vec r = (NodeList[j].Location+ax)-(NodeList[i].Location);
                     double distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+Xedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+ax - NodeList[i].Location);
                     }
-                    r = (NodeList[j].Location-Xedge)-(NodeList[i].Location);
+                    r = (NodeList[j].Location-ax)-(NodeList[i].Location);
                     distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-Xedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-ax - NodeList[i].Location);
                     }
             }
         }
     }
     if (PeriodicY == true)
     {
-        // now try to find the long vector pointing from y_min to y_max
-        double y_min, y_max;
-        y_min = y_max = 0.0;
-        for (int i=0; i<this->NumSite; i++)
-        {
-            if (NodeList[i].Location(1) < y_min)
-                y_min = NodeList[i].Location(1);
-            if (NodeList[i].Location(1) > y_max)
-                y_max = NodeList[i].Location(1);
-        }
-        vec Yedge;
-        Yedge << 0.0 << y_max-y_min << 0.0;
         for (int i=0; i<this->NumSite; i++)
         {
             for (int j=0; j<this->NumSite; j++)
             {
-                    vec r = (NodeList[j].Location+Yedge)-(NodeList[i].Location);
+                    vec r = (NodeList[j].Location+ay)-(NodeList[i].Location);
                     double distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+Yedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+ay - NodeList[i].Location);
                     }
-                    r = (NodeList[j].Location-Yedge)-(NodeList[i].Location);
+                    r = (NodeList[j].Location-ay)-(NodeList[i].Location);
                     distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-Yedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-ay - NodeList[i].Location);
                     }
             }
         }
     }
     if (PeriodicZ == true)
     {
-        // now try to find the long vector pointing from z_min to z_max
-        double z_min, z_max;
-        z_min = z_max = 0.0;
-        for (int i=0; i<this->NumSite; i++)
-        {
-            if (NodeList[i].Location(2) < z_min)
-                z_min = NodeList[i].Location(2);
-            if (NodeList[i].Location(2) > z_max)
-                z_max = NodeList[i].Location(2);
-        }
-        vec Zedge;
-        Zedge << 0.0 << 0.0 << z_max-z_min;
         for (int i=0; i<this->NumSite; i++)
         {
             for (int j=0; j<this->NumSite; j++)
             {
-                    vec r = (NodeList[j].Location+Zedge)-(NodeList[i].Location);
+                    vec r = (NodeList[j].Location+az)-(NodeList[i].Location);
                     double distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+Zedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location+az - NodeList[i].Location);
                     }
-                    r = (NodeList[j].Location-Zedge)-(NodeList[i].Location);
+                    r = (NodeList[j].Location-az)-(NodeList[i].Location);
                     distance_square = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
                     if (distance_square < ExchangeCutoff*ExchangeCutoff)
                     {
                         NodeList[i].ListOfExchangeNeighbours.push_back(j);
-                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-Zedge - NodeList[i].Location);
+                        NodeList[i].ListOfOurwardsVectors.push_back(NodeList[j].Location-az - NodeList[i].Location);
                     }
             }
         }

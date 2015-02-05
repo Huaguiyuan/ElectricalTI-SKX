@@ -30,7 +30,7 @@ public:
     SpinSystem(const char* filename, double J_initial, double D_initial);
     ~SpinSystem();
     void GenerateNeighborList(double ExchangeCutoff, double StrayCutoff, 
-        bool PeriodicX, bool PeriodicY, bool PeriodicZ);
+        bool PeriodicX, bool PeriodicY, bool PeriodicZ, vec ax, vec ay, vec az);
     void PrintSpinTextureToTextFile(const char* filename);
     void CalculateStrayFieldTensor(void);
     void FormatTheSystem(vec S_input);
