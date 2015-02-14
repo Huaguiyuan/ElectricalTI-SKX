@@ -158,6 +158,8 @@ void SpinSystem::GenerateNeighborList(double ExchangeCutoff, double StrayCutoff,
 
 SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial)
 {
+    J = J_initial;
+    D = D_initial;
     int seed = (int)time(0);
     RanGen = new CRandomMersenne(seed);
     std::ifstream input(filename);
@@ -205,18 +207,22 @@ SpinSystem::~SpinSystem()
 void SpinSystem::CalculateEffectiveField()
 {
     vec Heff(3);
-    printf("debug %lu\n", this->ExternalField.size());
-    for (int i=0; i<this->NodeList.size(); i++)
+    //printf("debug %lu\n", this->ExternalField.size());
+    std::vector<MagneticNode>::iterator i;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
     {
         Heff.zeros();
-        for (int j=0; j<this->NodeList[i].ListOfExchangeNeighbours.size(); j++)
+        std::vector<int>::iterator j;
+        int count=0;
+        for (j=i->ListOfExchangeNeighbours.begin(); j!=i->ListOfExchangeNeighbours.end(); j++)
         {
-            int J_index = NodeList[i].ListOfExchangeNeighbours[j];
-            vec r = NodeList[i].ListOfOurwardsVectors[j];
-            Heff = Heff + J*(NodeList[J_index].Spin) 
-                    + D*cross(NodeList[J_index].Spin, r); 
+            int J_index = *j;
+            vec r = i->ListOfOurwardsVectors[count++];
+            Heff = Heff + J*(NodeList[J_index].Spin) - D*cross(NodeList[J_index].Spin, r); 
         }
-        this->EffectiveField[i] = Heff + this->ExternalField[i];        
+        Heff = Heff + this->ExternalField[i->Index];  
+        this->EffectiveField[i->Index] = Heff;
+       // Heff.print();
     }
 }
 /////////////
