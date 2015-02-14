@@ -35,7 +35,8 @@ int main (int argc, char** argv )
     Haha.CalculateEffectiveField();
     for (int i=0; i<Haha.NumSite; i++)
     {
-        printf("%lf\n", (Haha.EffectiveField[i])(2));
+        printf("%lf\n", (Haha.EffectiveField[i])(2));  
+        
     }
 }
     
