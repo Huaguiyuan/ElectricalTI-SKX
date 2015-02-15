@@ -21,6 +21,7 @@ public:
     double LatticeConstant; // [m]
     double Ku_zero; */        // easy axis anisotropy energy density  at zero temperature. [eV/m^3]
     double Temperature;     // [K]
+    bool Pinned;
    /* double Ms_zero; // zero-T magnetization. [A/m]
     double Beta; // The temperature dependency of the magnetization.
     vec EasyAxis;         // a unit vector along the easy axis.

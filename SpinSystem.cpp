@@ -156,10 +156,11 @@ void SpinSystem::GenerateNeighborList(double ExchangeCutoff, double StrayCutoff,
 }
 ///////////////////////////////////////////////////////////////////////
 
-SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial)
+SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial, double New_alpha)
 {
     J = J_initial;
     D = D_initial;
+    alpha = New_alpha;
     int seed = (int)time(0);
     RanGen = new CRandomMersenne(seed);
     std::ifstream input(filename);
@@ -182,6 +183,8 @@ SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial)
         //newLocation.print();
         MagneticNode temp(countSite, newLocation, newSpin);
         countSite++;
+        temp.Pinned = false;
+        temp.Temperature = 0.0;
         this->NodeList.push_back(temp);
     } while (!input.eof());
     this->NumSite = countSite;
@@ -193,6 +196,7 @@ SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial)
     {
         this->ExternalField.push_back(FieldInitializer);
         this->EffectiveField.push_back(FieldInitializer);
+        this->RandomField.push_back(FieldInitializer);
     }
 }
 ///////////////////////////////////////////////////////////////////////
@@ -242,4 +246,79 @@ void SpinSystem::PrintSpinTextureToTextFile(const char* filename)
                 );
     }
     fclose(fp);
+}
+//////
+void SpinSystem::CalculateRandomField(double TimeStep)
+{
+    vec L(3);
+    double TempRand;
+    double Lambda = alpha/(1.+alpha*alpha);
+    std::vector<MagneticNode>::iterator i;
+    for (i=NodeList.begin(); i!=NodeList.end(); i++)
+    {
+        for (int j=0; j<3; j++)
+        {
+            double TempRand = RanGen->Random() - 0.5;
+            L(j) = sqrt(24.0*Lambda*i->Temperature*TimeStep)*TempRand;
+        }
+        this->RandomField[i->Index] = L;
+    }
+}
+///////
+void SpinSystem::Evolve(double TimeStep, double Time)
+{
+    // This function evolves Plate AND ExternalField from time to time+TimeStep
+    // Random force is added to the effective field at each time step.
+    vec A(3);
+    vec BL(3);
+    vec A_tilde(3);
+    vec BL_tilde(3);
+    vec S(3);
+    vec L(3);
+    vec Heff(3);
+    std::vector<vec> S_tilde;
+    std::vector<vec> SpinUpdate;
+    S_tilde.resize(this->NumSite);
+    SpinUpdate.resize(this->NumSite);
+    this->CalculateRandomField(TimeStep);
+    this->UpdateExternalField(Time);
+    this->CalculateEffectiveField();
+    for (std::vector<MagneticNode>::iterator i=NodeList.begin(); i!=NodeList.end(); i++)
+    {
+        S = i->Spin;
+        L = RandomField[i->Index];
+        Heff = EffectiveField[i->Index];
+        A = -1.0/(1+alpha*alpha)*cross(S, Heff)-alpha/(1.0+alpha*alpha)*(S*(dot(S, Heff)) - Heff);
+        BL = -1.0/(1+alpha*alpha)*cross(S, L)-alpha/(1.0+alpha*alpha)*(S*(dot(S, L)) - L);
+        S_tilde[i->Index] = S + A*TimeStep + BL;
+        SpinUpdate[i->Index] = 0.5*A*TimeStep + 0.5*BL;
+    }
+    //Now calculate the PlateUpdate and ExternalField to time+TimeStep;
+    UpdateExternalField(Time+TimeStep);
+    this->CalculateEffectiveField();
+    for (std::vector<MagneticNode>::iterator i=NodeList.begin(); i!=NodeList.end(); i++)
+    {
+        S = S_tilde[i->Index];
+        L = this->RandomField[i->Index];
+        Heff = this->EffectiveField[i->Index];
+        A = -1.0/(1+alpha*alpha)*cross(S, Heff)-alpha/(1.0+alpha*alpha)*(S*(dot(S, Heff)) - Heff);
+        BL = -1.0/(1+alpha*alpha)*cross(S, L)-alpha/(1.0+alpha*alpha)*(S*(dot(S, L)) - L);
+        SpinUpdate[i->Index] = SpinUpdate[i->Index] + 0.5*A*TimeStep + 0.5*BL;
+        if (i->Pinned == false)
+            i->Spin = i->Spin + SpinUpdate[i->Index];
+    }
+}
+/////
+void SpinSystem::UpdateExternalField(double Time)
+{
+
+}
+/////////
+void SpinSystem::SetTemperature(double newTemperature)
+{
+    std::vector<MagneticNode>::iterator i;
+    for (i=this->NodeList.begin(); i!=NodeList.end(); i++)
+    {
+        i->Temperature = newTemperature;
+    }
 }

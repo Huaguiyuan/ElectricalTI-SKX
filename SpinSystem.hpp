@@ -19,15 +19,16 @@ public:
     double CurrentTime;
     double J;
     double D;
+    double alpha;
     int NumSite;
     //container* VoroContainer;
     //mat** Tensors;
     vector<MagneticNode> NodeList;
     vector<vec> EffectiveField;
     vector<vec> ExternalField;
-    vector<vec> RamdomField;
+    vector<vec> RandomField;
     CRandomMersenne* RanGen;  //The random number sequence for the stochastic field calculation.
-    SpinSystem(const char* filename, double J_initial, double D_initial);
+    SpinSystem(const char* filename, double J_initial, double D_initial, double alpha);
     ~SpinSystem();
     void GenerateNeighborList(double ExchangeCutoff, double StrayCutoff, 
         bool PeriodicX, bool PeriodicY, bool PeriodicZ, vec ax, vec ay, vec az);
@@ -35,10 +36,14 @@ public:
     void CalculateStrayFieldTensor(void);
     void FormatTheSystem(vec S_input);
     mat Tensor(vec PQ);
-    void CalculateRandomField(void);
-    void Evolve(double deltaT, double* TemperatureList, vec* ExternalField);
+    void CalculateRandomField(double TimeStep);
+    void Evolve(double TimeStep, double Time);
     void Initialize(void);
-    void CalculateEffectiveField(void);   
+    void CalculateEffectiveField(void); 
+    void UpdateExternalField(double Time);
+    void CreateWindow(void);
+    void UpdateWindowDisplay(void);
+    void SetTemperature(double newTemperature);
 };
 
 #endif	/* SPINSYSTEM_HPP */
