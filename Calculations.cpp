@@ -582,6 +582,7 @@ void CalculateHallEffect(double Temperature, double Ef, double Miu1,
     outputHamiltonian.close();
     
     printf("calculating Ef=%lf...\n", Ef);
+    World.CalculateGR(Ef);
     cx_mat T = World.ThermalAverageTransmission(Temperature, Ef);
     T.print("T = ");
     Complex P, Q;

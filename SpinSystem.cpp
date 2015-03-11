@@ -197,6 +197,7 @@ SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial,
         this->ExternalField.push_back(FieldInitializer);
         this->EffectiveField.push_back(FieldInitializer);
         this->RandomField.push_back(FieldInitializer);
+        this->BackgroundField.push_back(FieldInitializer);
     }
 }
 ///////////////////////////////////////////////////////////////////////
@@ -224,7 +225,8 @@ void SpinSystem::CalculateEffectiveField()
             vec r = i->ListOfOurwardsVectors[count++];
             Heff = Heff + J*(NodeList[J_index].Spin) - D*cross(NodeList[J_index].Spin, r); 
         }
-        Heff = Heff + this->ExternalField[i->Index];  
+        Heff = Heff + this->ExternalField[i->Index]; 
+        Heff = Heff + this->BackgroundField[i->Index];
         this->EffectiveField[i->Index] = Heff;
        // Heff.print();
     }
@@ -265,7 +267,7 @@ void SpinSystem::CalculateRandomField(double TimeStep)
     }
 }
 ///////
-void SpinSystem::Evolve(double TimeStep, double Time)
+void SpinSystem::Evolve(double TimeStep, double Time, bool AddTorque)
 {
     // This function evolves Plate AND ExternalField from time to time+TimeStep
     // Random force is added to the effective field at each time step.
@@ -320,5 +322,27 @@ void SpinSystem::SetTemperature(double newTemperature)
     for (i=this->NodeList.begin(); i!=NodeList.end(); i++)
     {
         i->Temperature = newTemperature;
+    }
+}
+//////////
+void SpinSystem::ReadInElectronSiteIndex(const char* filename)
+{
+    FILE* fp;
+    fp = fopen(filename, "r");
+    int MagneticSiteIndex, ElectronSiteIndex;
+    while (!feof(fp))
+    {
+        fscanf(fp, "%d%d\n", &MagneticSiteIndex, &ElectronSiteIndex);
+        this->NodeList[MagneticSiteIndex].ElectronSiteIndex = ElectronSiteIndex;
+        this->ListOfTorqueSiteIndecies.push_back(MagneticSiteIndex);
+    }
+    fclose(fp);
+}
+//////////
+void SpinSystem::SetBackgroundField(vec BackgroundField)
+{
+    for (int i=0; i<this->NumSite; i++)
+    {
+        this->BackgroundField[i] = BackgroundField;
     }
 }

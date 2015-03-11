@@ -27,6 +27,8 @@ public:
     vector<vec> EffectiveField;
     vector<vec> ExternalField;
     vector<vec> RandomField;
+    vector<vec> BackgroundField;
+    vector<int> ListOfTorqueSiteIndecies;
     CRandomMersenne* RanGen;  //The random number sequence for the stochastic field calculation.
     SpinSystem(const char* filename, double J_initial, double D_initial, double alpha);
     ~SpinSystem();
@@ -37,13 +39,15 @@ public:
     void FormatTheSystem(vec S_input);
     mat Tensor(vec PQ);
     void CalculateRandomField(double TimeStep);
-    void Evolve(double TimeStep, double Time);
+    void Evolve(double TimeStep, double Time, bool AddTorque);
     void Initialize(void);
     void CalculateEffectiveField(void); 
     void UpdateExternalField(double Time);
     void CreateWindow(void);
     void UpdateWindowDisplay(void);
     void SetTemperature(double newTemperature);
+    void ReadInElectronSiteIndex(const char* filename);
+    void SetBackgroundField(vec BackgroundField);
 };
 
 #endif	/* SPINSYSTEM_HPP */

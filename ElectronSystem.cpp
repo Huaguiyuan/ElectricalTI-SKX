@@ -1,4 +1,6 @@
 #include "ElectronSystem.hpp"
+#include "SpinSystem.hpp"
+#include "SpinSystem.hpp"
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -208,6 +210,45 @@ void ElectronSystem::CalculateGR(double energy)
     GR = inv(OpenHamiltonian);
 }
 //////////////
+void ElectronSystem::RenewGR(double energy)
+{
+    this->GenerateHamiltonian();
+    cx_mat OpenHamiltonian;
+    OpenHamiltonian = this->Hamiltonian;
+    //printf("debug.   %d\n", TotalMatrixSize);
+    //printf("%d", this->TotalMatrixSize);
+    cx_mat I;
+    //printf("debug2\n");
+    I.eye(TotalMatrixSize, TotalMatrixSize);
+    //printf("I generated. %d\n", ListOfOpenBoundaries.size());
+    
+    for (int i=0; i<this->ListOfOpenBoundaries.size(); i++)
+    {
+        //printf("Trying to get self\n");
+        //this->ListOfOpenBoundaries[i].GetSelfEnergy(energy);
+        //printf("self generated\n");
+        this->ListOfOpenBoundaries[i].AddSelfEnergy(OpenHamiltonian);
+        this->ListOfOpenBoundaries[i].GetGamma();
+        //printf("added\n");
+    }
+    OpenHamiltonian = energy*I - OpenHamiltonian;
+    //printf("inverting...\n");
+    //ofstream test("testdebug.txt");
+    //OpenHamiltonian.print(test);
+    GR = inv(OpenHamiltonian);
+}
+//////////////
+void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture)
+{
+    for (int i=0; i<SpinTexture.ListOfTorqueSiteIndecies.size(); i++)
+    {
+        int MagneticIndex = SpinTexture.ListOfTorqueSiteIndecies[i];
+        int ElectronicIndex = SpinTexture.NodeList[MagneticIndex].ElectronSiteIndex;
+        this->ListOfSites[ElectronicIndex].Spin = SpinTexture.NodeList[MagneticIndex].Spin;
+    }
+    this->GenerateHamiltonian();
+}
+/////////////
 cx_mat ElectronSystem::ObtainGR_AB(OpenBoundary A, OpenBoundary B)
 {
     cx_mat GR_AB;
@@ -232,7 +273,8 @@ cx_mat ElectronSystem::ObtainGR_AB(OpenBoundary A, OpenBoundary B)
 ////////////
 cx_mat ElectronSystem::Transmission(double energy)
 {
-    this->CalculateGR(energy);
+    //ATTENTION: Before this function, one need to call CalculateGR first.
+    //this->CalculateGR(energy);
     //ofstream fileGR("GR.txt");
     //this->GR.print(fileGR);
     //fileGR.close();

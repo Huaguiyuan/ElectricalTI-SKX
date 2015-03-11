@@ -8,6 +8,7 @@
 #ifndef ELECTRONSYSTEM_HPP
 #define	ELECTRONSYSTEM_HPP
 #include "ElectronSite.hpp"
+#include "SpinSystem.hpp"
 #include "OpenBoundary.hpp"
 #include <iostream>
 #include "discpp.h"
@@ -31,6 +32,7 @@ public:
     void PrintBoundaryList(void);
     void PrintNeighbourList(void);
     void CalculateGR(double energy);
+    void RenewGR(double energy);
     //void CalculateGreenNLinearResponse(double energy);
     cx_mat Transmission(double Energy);
     cx_mat ThermalAverageTransmission(double Temperature, double Ef);
@@ -48,6 +50,8 @@ public:
                                        double &Sx, double &Sy, double &Sz);
     void OutputSpinTextureProFit(const char* filename);
     void OutputSpinCurrentMapProFit(const char* filename, int Xstart, int Xend, int Ystart, int Yend);
+    vec OnSiteTorque(int SiteIndex, double JH);
+    void UpdateHamiltonian(SpinSystem &SpinTexture);
     
 private: 
     cx_mat ObtainGR_AB(OpenBoundary A, OpenBoundary B);

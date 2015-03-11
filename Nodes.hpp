@@ -17,6 +17,7 @@ class MagneticNode
 public:
     vec Spin;   // dimensionless magnetization, normalized to Ms_Zero;
     int Index;  // The integer that labels the node.
+    int ElectronSiteIndex; // This records the index of the site in the ElectronSystem that gives the torque.
    /* double Hex0_bulk;   // [A/m], zero temperature exchange field.
     double LatticeConstant; // [m]
     double Ku_zero; */        // easy axis anisotropy energy density  at zero temperature. [eV/m^3]
