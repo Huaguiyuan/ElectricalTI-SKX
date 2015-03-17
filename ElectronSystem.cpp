@@ -212,7 +212,7 @@ void ElectronSystem::CalculateGR(double energy)
 //////////////
 void ElectronSystem::RenewGR(double energy)
 {
-    this->GenerateHamiltonian();
+    //this->GenerateHamiltonian();
     cx_mat OpenHamiltonian;
     OpenHamiltonian = this->Hamiltonian;
     //printf("debug.   %d\n", TotalMatrixSize);
@@ -238,13 +238,32 @@ void ElectronSystem::RenewGR(double energy)
     GR = inv(OpenHamiltonian);
 }
 //////////////
-void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture)
+void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture, double JH)
 {
+    cx_mat Pauli_X(2,2);
+    cx_mat Pauli_Y(2,2);
+    cx_mat Pauli_Z(2,2);
+    vec spinTemp(3);
+    Pauli_X.zeros();
+    Pauli_Y.zeros();
+    Pauli_Z.zeros();
+    Pauli_X(0,1) = 1.0;
+    Pauli_X(1,0) = 1.0;
+    Pauli_Y(0,1) = Complex(0.0, -1.0);
+    Pauli_Y(1,0) = Complex(0.0, 1.0);
+    Pauli_Z(0.0) = 1.0;
+    Pauli_Z(1,1) = -1.0;
+    
+    
     for (int i=0; i<SpinTexture.ListOfTorqueSiteIndecies.size(); i++)
     {
         int MagneticIndex = SpinTexture.ListOfTorqueSiteIndecies[i];
         int ElectronicIndex = SpinTexture.NodeList[MagneticIndex].ElectronSiteIndex;
-        this->ListOfSites[ElectronicIndex].Spin = SpinTexture.NodeList[MagneticIndex].Spin;
+        spinTemp = SpinTexture.NodeList[MagneticIndex].Spin;;
+        this->ListOfSites[ElectronicIndex].Spin = spinTemp;
+        this->ListOfSites[ElectronicIndex].OnSiteBlock =  JH*spinTemp(0)*Pauli_X
+                        +JH*spinTemp(1)*Pauli_Y
+                        +JH*spinTemp(2)*Pauli_Z;
     }
     this->GenerateHamiltonian();
 }
@@ -483,6 +502,24 @@ void ElectronSystem::InjectionDOS(OpenBoundary& Source, double &Up, double &Down
     }
     Up = real(UpTemp);
     Down = real(DownTemp);
+}
+//////////////
+vec ElectronSystem::OnSiteSpin(int SiteIndex, double Ef)
+{
+    cx_mat x,y,z;
+    x << 0.0 << 1.0 << endr
+      << 1.0 << 0.0 << endr;
+    y << 0.0 << Complex(0.,-1.) << endr
+      << Complex(0.,1.) << 0.0 << endr;
+    z << 1.000000 << 0.0 << endr
+      << 0.0 << -1.000000 << endr; 
+    vec SpinVector(3);
+    cx_mat Gn = this->OnSiteCorelationFunctionGn(SiteIndex, SiteIndex, Ef);
+    SpinVector(0) = real(trace(x*Gn));
+    SpinVector(1) = real(trace(y*Gn));
+    SpinVector(2) = real(trace(z*Gn));
+    return SpinVector;
+    
 }
 
 void ElectronSystem::PlotCurrentMap(int SizeX, int SizeY, int PlotX, int PlotY)
@@ -871,6 +908,28 @@ void ElectronSystem::OutputSpinTextureProFit(const char* filename)
         sx = this->ListOfSites[i].Spin(0);
         sy = this->ListOfSites[i].Spin(1);
         sz = this->ListOfSites[i].Spin(2);
+        r = sqrt(sx*sx+sy*sy);
+        theta = atan2(sy, sx);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+    }
+    fclose(fp);
+}
+/////
+void ElectronSystem::OutputElectronSpinMapProFit(const char* filename, double Ef)
+{
+    printf("Generating ProFit data for electron spin map...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, theta, sx, sy, sz;
+    vec tempSpin(3);
+    for (int i=0; i<this->NumSite; i++)
+    {
+        x = this->ListOfSites[i].Location(0);
+        y = this->ListOfSites[i].Location(1);
+        tempSpin = this->OnSiteSpin(i, Ef);
+        sx = tempSpin(0);
+        sy = tempSpin(1);
+        sz = tempSpin(2);
         r = sqrt(sx*sx+sy*sy);
         theta = atan2(sy, sx);
         fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);

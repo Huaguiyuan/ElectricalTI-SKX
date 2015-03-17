@@ -9,17 +9,17 @@
 #define	SPINSYSTEM_HPP
 #include "Nodes.hpp"
 #include "randomc.h"
+#include "ElectronSystem.hpp"
 //#include "voro++.hh"
 
 //using namespace voro;
-
+class ElectronSystem;
 class SpinSystem 
 {
 public:
     double CurrentTime;
     double J;
     double D;
-    double alpha;
     int NumSite;
     //container* VoroContainer;
     //mat** Tensors;
@@ -41,13 +41,17 @@ public:
     void CalculateRandomField(double TimeStep);
     void Evolve(double TimeStep, double Time, bool AddTorque);
     void Initialize(void);
-    void CalculateEffectiveField(void); 
+    void CalculateEffectiveField(bool AddTorque); 
     void UpdateExternalField(double Time);
     void CreateWindow(void);
     void UpdateWindowDisplay(void);
     void SetTemperature(double newTemperature);
     void ReadInElectronSiteIndex(const char* filename);
     void SetBackgroundField(vec BackgroundField);
+    void CalculateTorque(ElectronSystem &Electrons, double Ef, double J_Hunds);
+    void OutputTextureToTextFile(const char* filename);
+    void OutputTorqueFieldToProFitTextFile(const char* filename);
+    void OutputEffectiveToProFitTextFile(const char* filename);
 };
 
 #endif	/* SPINSYSTEM_HPP */

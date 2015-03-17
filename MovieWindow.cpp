@@ -10,8 +10,9 @@ MovieWindow::MovieWindow(double Xmin, double Xmax, double Ymin, double Ymax, int
     this->yv = new float[NumSite];
     this->TheTitle = "The movie window";
     //TheWindow.winsiz ((PlotX/2), PlotX/2);
-    TheWindow.winsiz(600, 600);
-    TheWindow.page (1800, 1800);
+    double YoverX_Ratio = (Ymax-Ymin)/(Xmax-Xmin);
+    TheWindow.winsiz(600, (int)(600*YoverX_Ratio)+200);
+    TheWindow.page (1800, (int)(1800*YoverX_Ratio)+500);
     TheWindow.sclmod ("full");
     TheWindow.scrmod ("revers");
     //Graph.scrmod ("black");
@@ -20,8 +21,8 @@ MovieWindow::MovieWindow(double Xmin, double Xmax, double Ymin, double Ymax, int
     TheWindow.disini ();
     TheWindow.pagera ();
     TheWindow.hwfont ();
-    TheWindow.axspos (100, -100);
-    TheWindow.axslen (1200, 1200);
+    TheWindow.axspos (400, -300);
+    TheWindow.axslen (1200, (int)(1200*YoverX_Ratio));
     TheWindow.name ("X-axis", "x");
     TheWindow.name ("Y-axis", "y");
     TheWindow.vecopt(1.0, "scale");
@@ -32,6 +33,7 @@ MovieWindow::MovieWindow(double Xmin, double Xmax, double Ymin, double Ymax, int
     TheWindow.graf (Xmin-1, Xmax, 0, 10, Ymin-1, Ymax, 0, 10);
     TheWindow.height (50);
     TheWindow.vecclr (-2);   
+    TheWindow.errmod("all", "off");
 }
 //////////////////////////////////////
 MovieWindow::~MovieWindow()
@@ -58,4 +60,5 @@ void MovieWindow::UpdateWindow(SpinSystem& SpinTexture, string TitleUpdate)
     TheWindow.titlin (buffer, 4);
     TheWindow.title ();
     TheWindow.vecfld (xv, yv, xp, yp, SpinTexture.NumSite, 1901);
+    TheWindow.sendbf();
 }

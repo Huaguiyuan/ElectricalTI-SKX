@@ -1,4 +1,5 @@
 #include "SpinSystem.hpp"
+#include "ElectronSystem.hpp"
 //#include "NeighborList.hpp"
 #include <armadillo>
 #include <math.h>
@@ -160,7 +161,6 @@ SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial,
 {
     J = J_initial;
     D = D_initial;
-    alpha = New_alpha;
     int seed = (int)time(0);
     RanGen = new CRandomMersenne(seed);
     std::ifstream input(filename);
@@ -185,6 +185,7 @@ SpinSystem::SpinSystem(const char* filename, double J_initial, double D_initial,
         countSite++;
         temp.Pinned = false;
         temp.Temperature = 0.0;
+        temp.alpha = New_alpha;
         this->NodeList.push_back(temp);
     } while (!input.eof());
     this->NumSite = countSite;
@@ -209,7 +210,7 @@ SpinSystem::~SpinSystem()
 
 /////////////////////////////////////////////////////////
 
-void SpinSystem::CalculateEffectiveField()
+void SpinSystem::CalculateEffectiveField(bool AddTorque)
 {
     vec Heff(3);
     //printf("debug %lu\n", this->ExternalField.size());
@@ -229,6 +230,15 @@ void SpinSystem::CalculateEffectiveField()
         Heff = Heff + this->BackgroundField[i->Index];
         this->EffectiveField[i->Index] = Heff;
        // Heff.print();
+    }
+    if (AddTorque == true)
+    {
+        for (int i=0; i<this->ListOfTorqueSiteIndecies.size(); i++)
+        {
+            int Index = ListOfTorqueSiteIndecies[i];
+            Heff = this->EffectiveField[Index];
+            this ->EffectiveField[Index] = Heff + this->NodeList[Index].TorqueField;
+        }
     }
 }
 /////////////
@@ -254,10 +264,13 @@ void SpinSystem::CalculateRandomField(double TimeStep)
 {
     vec L(3);
     double TempRand;
-    double Lambda = alpha/(1.+alpha*alpha);
+    double Lambda;
+    double alpha;
     std::vector<MagneticNode>::iterator i;
     for (i=NodeList.begin(); i!=NodeList.end(); i++)
     {
+        alpha = i->alpha;
+        Lambda= alpha/(1.+alpha*alpha);
         for (int j=0; j<3; j++)
         {
             double TempRand = RanGen->Random() - 0.5;
@@ -284,12 +297,13 @@ void SpinSystem::Evolve(double TimeStep, double Time, bool AddTorque)
     SpinUpdate.resize(this->NumSite);
     this->CalculateRandomField(TimeStep);
     this->UpdateExternalField(Time);
-    this->CalculateEffectiveField();
+    this->CalculateEffectiveField(AddTorque);
     for (std::vector<MagneticNode>::iterator i=NodeList.begin(); i!=NodeList.end(); i++)
     {
         S = i->Spin;
         L = RandomField[i->Index];
         Heff = EffectiveField[i->Index];
+        double alpha = i->alpha;
         A = -1.0/(1+alpha*alpha)*cross(S, Heff)-alpha/(1.0+alpha*alpha)*(S*(dot(S, Heff)) - Heff);
         BL = -1.0/(1+alpha*alpha)*cross(S, L)-alpha/(1.0+alpha*alpha)*(S*(dot(S, L)) - L);
         S_tilde[i->Index] = S + A*TimeStep + BL;
@@ -297,9 +311,10 @@ void SpinSystem::Evolve(double TimeStep, double Time, bool AddTorque)
     }
     //Now calculate the PlateUpdate and ExternalField to time+TimeStep;
     UpdateExternalField(Time+TimeStep);
-    this->CalculateEffectiveField();
+    this->CalculateEffectiveField(AddTorque);
     for (std::vector<MagneticNode>::iterator i=NodeList.begin(); i!=NodeList.end(); i++)
     {
+        double alpha = i->alpha;
         S = S_tilde[i->Index];
         L = this->RandomField[i->Index];
         Heff = this->EffectiveField[i->Index];
@@ -345,4 +360,77 @@ void SpinSystem::SetBackgroundField(vec BackgroundField)
     {
         this->BackgroundField[i] = BackgroundField;
     }
+}
+///////////
+void SpinSystem::CalculateTorque(ElectronSystem& Electrons, double Ef, double J_Hunds)
+{
+    for (int i=0; i<this->ListOfTorqueSiteIndecies.size(); i++)
+    {
+        int MagneticIndex = this->ListOfTorqueSiteIndecies[i];
+        int ElectronIndex = this->NodeList[MagneticIndex].ElectronSiteIndex;
+        this->NodeList[MagneticIndex].TorqueField = 2.0*(-J_Hunds)*Electrons.OnSiteSpin(ElectronIndex, Ef);
+    }
+}
+///////////
+void SpinSystem::OutputTextureToTextFile(const char* filename)
+{
+    FILE *fp;
+    fp = fopen(filename, "w");
+    std::vector<MagneticNode>::iterator i;
+    printf("Generating the spin texture to txt file...");
+    fprintf(fp, "x    y     z      Sx     Sy     Sz      JH      t     phi\n");
+    for (i = this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        fprintf(fp, "% lf\t% lf\t% lf\t% le\t% le\t% le\t-1.0000000\t-1.0000000\t0.0000000\n", 
+                i->Location(0), 
+                i->Location(1), 
+                i->Location(2), 
+                i->Spin(0), 
+                i->Spin(1), 
+                i->Spin(2));
+    }
+    fclose(fp);
+    printf("done.\n");
+}
+//////////
+void SpinSystem::OutputTorqueFieldToProFitTextFile(const char* filename)
+{
+    printf("Generating ProFit data for TorqueField plot...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, theta, sx, sy, sz;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        x = this->NodeList[i].Location(0);
+        y = this->NodeList[i].Location(1);
+        sx = this->NodeList[i].TorqueField(0);
+        sy = this->NodeList[i].TorqueField(1);
+        sz = this->NodeList[i].TorqueField(2);
+        r = sqrt(sx*sx+sy*sy);
+        theta = atan2(sy, sx);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+    }
+    fclose(fp);
+}
+////////////
+void SpinSystem::OutputEffectiveToProFitTextFile(const char* filename)
+{
+    printf("Generating ProFit data for EffectiveField plot...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, theta, sx, sy, sz;
+    vec Field(3);
+    for (int i=0; i<this->NumSite; i++)
+    {
+        x = this->NodeList[i].Location(0);
+        y = this->NodeList[i].Location(1);
+        Field = this->EffectiveField[i];
+        sx = Field(0);
+        sy = Field(1);
+        sz = Field(2);
+        r = sqrt(sx*sx+sy*sy);
+        theta = atan2(sy, sx);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+    }
+    fclose(fp);
 }

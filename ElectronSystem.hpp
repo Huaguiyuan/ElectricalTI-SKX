@@ -13,8 +13,10 @@
 #include <iostream>
 #include "discpp.h"
 
+
 using namespace std;
 
+class SpinSystem;
 class ElectronSystem {
 public:
     std::vector<ElectronSite> ListOfSites;
@@ -50,8 +52,9 @@ public:
                                        double &Sx, double &Sy, double &Sz);
     void OutputSpinTextureProFit(const char* filename);
     void OutputSpinCurrentMapProFit(const char* filename, int Xstart, int Xend, int Ystart, int Yend);
-    vec OnSiteTorque(int SiteIndex, double JH);
-    void UpdateHamiltonian(SpinSystem &SpinTexture);
+    vec OnSiteSpin(int SiteIndex, double Ef);
+    void UpdateHamiltonian(SpinSystem &SpinTexture, double JH);
+    void OutputElectronSpinMapProFit(const char* filename, double Ef);
     
 private: 
     cx_mat ObtainGR_AB(OpenBoundary A, OpenBoundary B);
