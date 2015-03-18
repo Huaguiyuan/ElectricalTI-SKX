@@ -23,8 +23,9 @@ public:
     int BoundaryIndex;
     int TotalBoundaryMatrixSize;
     double ChemicalPotential;
+    vec VirtualBoundaryShift;
     std::vector<int> StartingRowInBoundaryMatrix;
-    void ConstructF00F01(double CouplingT);
+    void ConstructF00F01(double CouplingT, double CouplingCutoff);
     bool BelongsToThisBoundary(int ElectronSiteIndex);
     void GetSelfEnergy(double energy);
     void AddSelfEnergy(cx_mat &OpenHamiltonian);

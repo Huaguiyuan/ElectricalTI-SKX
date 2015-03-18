@@ -434,3 +434,72 @@ void SpinSystem::OutputEffectiveToProFitTextFile(const char* filename)
     }
     fclose(fp);
 }
+/////////////////////////////
+vec SpinSystem::SkyrmionLocation(void)
+{
+    std::vector<MagneticNode>::iterator i;
+    vec SkyrmionPosition(3);
+    SkyrmionPosition.zeros();
+    double MinSz= 1.0;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        if (i->Spin(2) < MinSz)
+        {
+            MinSz = i->Spin(2);
+            SkyrmionPosition = i->Location;
+        }
+    }
+    return SkyrmionPosition;
+}
+/////////////////////////
+void SpinSystem::OutputSpinTextureGIF(double Xmin, double Xmax, double Ymin, double Ymax, const char* title)
+{
+    Dislin TheWindow;
+    TheWindow.errmod("all", "off");
+    //char titleBuffer[256];
+    float* xp;
+    float* yp;
+    float* xv;
+    float* yv;
+    xp = new float[NumSite];
+    xv = new float[NumSite];
+    yp = new float[NumSite];
+    yv = new float[NumSite];
+    //TheWindow.winsiz ((PlotX/2), PlotX/2);
+    double YoverX_Ratio = (Ymax-Ymin)/(Xmax-Xmin);
+    TheWindow.winsiz(600, (int)(600*YoverX_Ratio)+200);
+    TheWindow.page (1800, (int)(1800*YoverX_Ratio)+500);
+    TheWindow.sclmod ("full");
+    TheWindow.scrmod ("revers");
+    //Graph.scrmod ("black");
+    TheWindow.metafl ("gif");
+    TheWindow.x11mod("nostore");
+    TheWindow.disini ();
+    TheWindow.pagera ();
+    TheWindow.hwfont ();
+    TheWindow.axspos (400, -300);
+    TheWindow.axslen (1200, (int)(1200*YoverX_Ratio));
+    TheWindow.name ("X-axis", "x");
+    TheWindow.name ("Y-axis", "y");
+    TheWindow.vecopt(1.0, "scale");
+    TheWindow.vecopt(1.0-0.618, "size");
+    TheWindow.vecopt(1.0, "length");
+    TheWindow.vecopt(18.0, "angle");
+    //TheWindow.selwin(1);
+    TheWindow.graf (Xmin-1, Xmax, 0, 10, Ymin-1, Ymax, 0, 10);
+    TheWindow.height (50);
+    TheWindow.vecclr (-2);   
+    
+    std::vector<MagneticNode>::iterator i;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        xp[i->Index] = (float)(i->Location(0));
+        yp[i->Index] = (float)(i->Location(1));
+        xv[i->Index] = (float)(i->Spin(0));
+        yv[i->Index] = (float)(i->Spin(1));
+    }    
+    TheWindow.titlin (title, 4);
+    TheWindow.title ();
+    TheWindow.vecfld (xv, yv, xp, yp, this->NumSite, 1901);
+    TheWindow.disfin();
+}

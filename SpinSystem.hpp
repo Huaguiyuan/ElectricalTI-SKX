@@ -52,6 +52,8 @@ public:
     void OutputTextureToTextFile(const char* filename);
     void OutputTorqueFieldToProFitTextFile(const char* filename);
     void OutputEffectiveToProFitTextFile(const char* filename);
+    void OutputSpinTextureGIF(double Xmin, double Xmax, double Ymin, double Ymax, const char* title);
+    vec SkyrmionLocation(void);
 };
 
 #endif	/* SPINSYSTEM_HPP */

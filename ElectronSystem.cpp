@@ -149,7 +149,9 @@ void ElectronSystem::ReadInOpenBoundaries(const char* filename)
             TotalMatrixSizeCount += this->ListOfSites[SiteIndex].OnSiteBlock.n_rows;
         }while (!iss.eof());
         temp.TotalBoundaryMatrixSize = TotalMatrixSizeCount;
+        temp.VirtualBoundaryShift.resize(3);
         ListOfOpenBoundaries.push_back(temp);
+        
         count++;
     } while (!input.eof());
     input.close();
@@ -157,6 +159,22 @@ void ElectronSystem::ReadInOpenBoundaries(const char* filename)
     
 }
 ////////////
+void ElectronSystem::ReadInOpenBoundaryVirtialShift(const char* filename)
+{
+    FILE *fp;
+    fp = fopen(filename, "r");
+    vec VirtualShiftTemp(3);
+    double ax, ay, az;
+    for (int i=0; i<this->ListOfOpenBoundaries.size(); i++)
+    {
+        fscanf(fp, "%le%le%le", &ax, &ay, &az);
+        VirtualShiftTemp(0) = ax;
+        VirtualShiftTemp(1) = ay;
+        VirtualShiftTemp(2) = az;
+        this->ListOfOpenBoundaries[i].VirtualBoundaryShift = VirtualShiftTemp;
+    }
+}
+///////////
 void ElectronSystem::PrintBoundaryList(void)
 {
     for (int i=0; i<ListOfOpenBoundaries.size(); i++)
@@ -321,24 +339,26 @@ cx_mat ElectronSystem::Transmission(double energy)
     return T;    
 }
 ///////////
-void ElectronSystem::GenerateBoundaryHamiltonians(double CouplingT)
+void ElectronSystem::GenerateBoundaryHamiltonians(double CouplingT, double CouplingCutoff)
 {
     for (int i=0; i<this->ListOfOpenBoundaries.size(); i++)
     {
-        this->ListOfOpenBoundaries[i].ConstructF00F01(CouplingT);
+        this->ListOfOpenBoundaries[i].ConstructF00F01(CouplingT, CouplingCutoff);
     }
     printf("%lu Hamiltonians of boundaries created.\n", this->ListOfOpenBoundaries.size());
 }
 ///////////
-ElectronSystem::ElectronSystem(const char* inputFilename, const char* boundaryFilename, double t)
+ElectronSystem::ElectronSystem(const char* inputFilename, const char* boundaryFilename,
+                               const char* inputBoundaryShiftFilename, double t, double CouplingCutoff)
 {
     this->ReadInGeometry(inputFilename);
-    this->CreateNeighbourList(1.00001, t);
+    this->CreateNeighbourList(CouplingCutoff, t);
     //this->PrintNeighbourList();
     printf("%d\n", this->TotalMatrixSize);  
     this->GenerateHamiltonian();
     this->ReadInOpenBoundaries(boundaryFilename);
-    this->GenerateBoundaryHamiltonians(t);
+    this->ReadInOpenBoundaryVirtialShift(inputBoundaryShiftFilename);
+    this->GenerateBoundaryHamiltonians(t, CouplingCutoff);
 }
 //////////////////////
 cx_mat ElectronSystem::ThermalAverageTransmission(double Temperature, double Ef)

@@ -32,7 +32,7 @@ void OpenBoundary::GetSurfaceGreenFunction(double energy, double Eta)
 
 ////////////////
 
-void OpenBoundary::ConstructF00F01(double CouplingT)
+void OpenBoundary::ConstructF00F01(double CouplingT, double CouplingCutoff)
 {
     int N_matrix = this->TotalBoundaryMatrixSize;
     this->F00.set_size(N_matrix, N_matrix);
@@ -64,9 +64,34 @@ void OpenBoundary::ConstructF00F01(double CouplingT)
                 F00.submat(i*BlockSize, j*BlockSize, (i+1)*BlockSize-1, (j+1)*BlockSize-1) = T;
             }
         }
-        I.eye(BlockSize, BlockSize);
-        F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = I*CouplingT;
-        // then take the coupling matrices 
+       /* I.eye(BlockSize, BlockSize);
+        F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = I*CouplingT;*/
+        //The above two lines were the cheating code neglecting the detailed atomic structure at the boundary.
+        //Now we formally formulate the F01 matrix.
+        
+        
+    }
+    
+    for (int i=0; i<this->ListOfBoundarySites.size(); i++)
+    {
+        for (int j=0; j<this->ListOfBoundarySites.size(); j++)
+        {
+            int I, J;
+            I = this->StartingRowInBoundaryMatrix[i];
+            J = this->StartingRowInBoundaryMatrix[j];
+            int BlockSizeRow = ListOfBoundarySites[i].OnSiteBlock.n_rows;
+            int BlockSizeCol = ListOfBoundarySites[j].OnSiteBlock.n_rows;
+            T.resize(BlockSizeRow, BlockSizeCol);
+            T.eye(BlockSizeRow, BlockSizeCol);
+            T = T*CouplingT;
+            vec r(3);
+            r = (ListOfBoundarySites[i].Location) - (ListOfBoundarySites[j].Location+this->VirtualBoundaryShift);
+            double distanceSquared = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
+            if (distanceSquared < CouplingCutoff*CouplingCutoff)
+            {
+                F01.submat(I, J, I+BlockSizeRow-1, J+BlockSizeCol-1) = T;
+            }
+        }
     }
 }
 

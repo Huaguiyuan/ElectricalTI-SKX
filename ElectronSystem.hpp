@@ -25,12 +25,14 @@ public:
     cx_mat GR;
     int TotalMatrixSize;
     int NumSite;
-    ElectronSystem(const char* inputFilename, const char* boundaryFilename, double t);
+    ElectronSystem(const char* inputFilename, const char* boundaryFilename, 
+                   const char* inputBoundaryShiftFilename, double t, double CouplingCutoff);
     void ReadInGeometry(const char* filename);
     void CreateNeighbourList(double CutoffRange, double t);
     void ReadInOpenBoundaries(const char* filename);
+    void ReadInOpenBoundaryVirtialShift(const char* filename);
     void GenerateHamiltonian(void);
-    void GenerateBoundaryHamiltonians(double CouplingT);
+    void GenerateBoundaryHamiltonians(double CouplingT, double CouplingCutoff);
     void PrintBoundaryList(void);
     void PrintNeighbourList(void);
     void CalculateGR(double energy);

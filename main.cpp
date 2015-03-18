@@ -19,6 +19,9 @@
 
 int main (int argc, char** argv )
 {
+    system("rm ./*.gif -f");
+    FILE* fpSkyrmionLocation;
+    fpSkyrmionLocation = fopen("SkyrmionLocation.txt","w");
     double Temperature = 0.00;
     double Ef = -6.0;
     double t = -1.5;
@@ -27,15 +30,16 @@ int main (int argc, char** argv )
     double J_exchange = -J_Hunds/100.0;
     double alpha = 0.1;
     double DM = J_exchange*4.0;
-    int UpdateTorquePerStep = 100;
-    bool CalculateTorque = false;
+    int UpdateTorquePerStep = 1000;
+    bool CalculateTorque = true;
     double TimeStep = 0.01;
     Miu1 =  0.01;
     
     vec BackgroundField(3);
     BackgroundField << 0.0 << 0.0 << 5.0*J_exchange;
     SpinSystem SpinTexture("input.txt",J_exchange, DM, alpha);
-    ElectronSystem Electrons("input.txt", "openBoundaries.txt",t);
+    ElectronSystem Electrons("input.txt", "openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.000001);
+    //Electrons.ReadInOpenBoundaryVirtialShift("BoundaryVirtualShift.txt");
     SpinTexture.NodeList[60].Pinned = false;
     if (CalculateTorque == true)
     {
@@ -52,9 +56,9 @@ int main (int argc, char** argv )
         }
     }  // now the absorbing boundaries are done.*/
     vec ax, ay, az;
-    ax << 11.0 << 0.0 << 0.0;
-    ay << 0.0 << 31.0 << 0.0;
-    az << 0.0 << 0.0 << 31.0;
+    ax << 21.0 << 0.0 << 0.0;
+    ay << 0.0 << 41.0 << 0.0;
+    az << 0.0 << 0.0 << 41.0;
     SpinTexture.GenerateNeighborList(1.00001, 1.00001, true, false, false, ax, ay, az);
     /*std::vector<MagneticNode>::iterator i;
     for (i=SpinTexture.NodeList.begin(); i!=SpinTexture.NodeList.end(); i++)
@@ -70,7 +74,7 @@ int main (int argc, char** argv )
         Electrons.CalculateGR(Ef);
     SpinTexture.SetBackgroundField(BackgroundField);
     SpinTexture.SetTemperature(Temperature);
-    MovieWindow OutputWindow(0.0, 11.0, 0.0, 11.0, SpinTexture.NumSite);
+    MovieWindow OutputWindow(0.0, 21, 0.0, 11.0, SpinTexture.NumSite);
     char Info[256];
     //OutputWindow.UpdateWindow(Haha, Info.str());
     int count = 0;
@@ -109,13 +113,20 @@ int main (int argc, char** argv )
             sprintf(Info, "t=%lf", Time);
             
             OutputWindow.UpdateWindow(SpinTexture, Info);
-            Electrons.OnSiteSpin(60, Ef).print("On-site spin =");
+            vec Location = SpinTexture.SkyrmionLocation();
+            fprintf(fpSkyrmionLocation, "%le\t%le\t%le\t%le\n", Time, Location(0), Location(1), Location(2));
+            fflush(fpSkyrmionLocation);
+            printf("%le\t%le\t%le\t%le\n", Time, Location(0), Location(1), Location(2));
+            SpinTexture.OutputSpinTextureGIF(0.0, 21.0, 0.0, 11.0, "J=1, D=4, H0=5");
+           // Electrons.OnSiteSpin(60, Ef).print("On-site spin =");
         }
         if (fabs(Time-5000.0)<1.0e-5)
         {
             SpinTexture.OutputEffectiveToProFitTextFile("OutputEffectiveField.txt");
             SpinTexture.OutputTextureToTextFile("OutputTexture.txt");
+            
         }
     }
+    fclose(fpSkyrmionLocation);
 }
     

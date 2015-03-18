@@ -568,7 +568,7 @@ void CalculateHallEffect(double Temperature, double Ef, double Miu1,
                          double &Miu2, double &Miu4, double &totalI, double &totalSz,
                          double &UpDos, double &DownDos)
 {
-    ElectronSystem World("input.txt","openBoundaries.txt", -1.5);
+    ElectronSystem World("input.txt","openBoundaries.txt","BoundaryVirtualShift.txt", -1.5, 1.0000001);
     //World.PrintBoundaryList();
     
     // debug
@@ -641,7 +641,7 @@ void CalculateHallEffect(double Temperature, double Ef, double Miu1,
 /////////
 void CalculateInjectionBandStructure(double t)
 {
-    ElectronSystem World("input.txt","openBoundaries.txt", t);
+    ElectronSystem World("input.txt","openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.000001);
     cx_mat F00 = World.ListOfOpenBoundaries[0].F00;
     cx_mat F01 = World.ListOfOpenBoundaries[0].F01;
     FILE* fp;
