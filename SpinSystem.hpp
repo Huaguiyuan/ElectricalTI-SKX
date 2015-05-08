@@ -54,6 +54,9 @@ public:
     void OutputEffectiveToProFitTextFile(const char* filename);
     void OutputSpinTextureGIF(double Xmin, double Xmax, double Ymin, double Ymax, const char* title);
     vec SkyrmionLocation(void);
+    double TotalEnergy(bool CountZeemanTerm);
+    void RenormalizeLength(void);
+    void UpdateBackgroundField(vec Field);
 };
 
 #endif	/* SPINSYSTEM_HPP */

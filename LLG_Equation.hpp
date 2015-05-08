@@ -27,6 +27,7 @@ void EnforceExternalFieldOnSite(int x, int y, double Hy, vec** ExternalField);
 double OnSiteEffectiveFieldZ(int i, int j, vec** Plate, NeighborRecord** NeighborInput, vec** ExternalFieldInput, double J, double D,
                            double &Heisenberg, double &DM, double &External, double &TotalXY, double &DMXY);
 
+
 #endif	/* LLG_EQUATION_HPP */
 
 

@@ -6,6 +6,7 @@
  * Created on 2013年10月1日, 上午10:01
  */
 #include "Calculations.hpp"
+#include "SpinSystem.hpp"
 
 
 int SkyrmionCalculation(void)
@@ -659,7 +660,69 @@ void CalculateInjectionBandStructure(double t)
     }
     fclose(fp);
 }
-
+/////////////
+double TopologicalCharge(SpinSystem &input)
+{
+    // For each square, we devide the lattice in the following way:
+    /*       c
+             * 
+             * *       
+             *   *     
+             *     *   
+   d * * * * a * * * * b
+       *     *
+         *   *
+           * *
+             *
+             e 
+     The three numbers should be a->b->c and a->d->e
+     */
+    std::vector<MagneticNode>::iterator i;
+    vec Sb(3);
+    vec Sc(3);
+    vec Sd(3);
+    vec Se(3);
+    vec Sa(3);
+    Sb.zeros();
+    Sc.zeros();
+    Sd.zeros();
+    Se.zeros();
+    Complex rho1, SigmaA1, EXP1;
+    Complex rho2, SigmaA2, EXP2;
+    Complex TQ = 0.0;
+    for (i=input.NodeList.begin(); i!=input.NodeList.end(); i++)
+    {
+        for (int j=0; j<i->ListOfExchangeNeighbours.size(); j++)
+        {
+            vec temp(3);
+            temp = i->ListOfOurwardsVectors[j];
+            if (temp(0) > 0.5)
+                Sb = input.NodeList[i->ListOfExchangeNeighbours[j]].Spin;
+            if (temp(0) < -0.5)
+                Sd = input.NodeList[i->ListOfExchangeNeighbours[j]].Spin;
+            if (temp(1) > 0.5)
+                Sc = input.NodeList[i->ListOfExchangeNeighbours[j]].Spin;
+            if (temp(1) < -0.5)
+                Se = input.NodeList[i->ListOfExchangeNeighbours[j]].Spin;
+        }
+        Sa = i->Spin;
+        rho1 = sqrt(2.0*(1+dot(Sa, Sb))*
+                         (1+dot(Sb, Sc))*
+                         (1+dot(Sc, Sa)));
+        EXP1 = (1.0+dot(Sa, Sb)+dot(Sb, Sc)+dot(Sc, Sa)
+                     +Complex(0,1.)*dot(Sa, cross(Sb, Sc)))/rho1;
+        SigmaA1 = 2.0*imag(log(EXP1));
+                
+        rho2 = sqrt(2.0*(1+dot(Sa, Sd))*
+                         (1+dot(Sd, Se))*
+                         (1+dot(Se, Sa)));
+        EXP2 = (1.0+dot(Sa, Sd)+dot(Sd, Se)+dot(Se, Sa)
+                     +Complex(0,1.)*dot(Sa, cross(Sd, Se)))/rho2;
+        SigmaA2 = 2.0*imag(log(EXP2));
+        TQ += real(1.0/4.0/PIPI*(SigmaA1+SigmaA2));
+    }
+    return real(TQ);
+}
 
 
 

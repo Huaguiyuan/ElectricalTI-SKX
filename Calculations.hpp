@@ -38,6 +38,7 @@ void CalculateHallEffect(double Temperature, double Ef, double Miu1,
                          double &Miu2, double &Miu4, double &totalI, double &totalSz,
                          double &UpDos, double &DownDos);
 void CalculateInjectionBandStructure(double t);
+double TopologicalCharge(SpinSystem &input);
 
 #endif	/* CALCULATIONS_HPP */
 

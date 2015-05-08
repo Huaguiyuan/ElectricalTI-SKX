@@ -331,6 +331,15 @@ void SpinSystem::UpdateExternalField(double Time)
 
 }
 /////////
+void SpinSystem::UpdateBackgroundField(vec Field)
+{
+    std::vector<MagneticNode>::iterator i;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        this->BackgroundField[i->Index] = Field;
+    }
+}
+/////////
 void SpinSystem::SetTemperature(double newTemperature)
 {
     std::vector<MagneticNode>::iterator i;
@@ -368,7 +377,7 @@ void SpinSystem::CalculateTorque(ElectronSystem& Electrons, double Ef, double J_
     {
         int MagneticIndex = this->ListOfTorqueSiteIndecies[i];
         int ElectronIndex = this->NodeList[MagneticIndex].ElectronSiteIndex;
-        this->NodeList[MagneticIndex].TorqueField = 2.0*(-J_Hunds)*Electrons.OnSiteSpin(ElectronIndex, Ef);
+        this->NodeList[MagneticIndex].TorqueField = 2.0*(J_Hunds)*Electrons.OnSiteSpin(ElectronIndex, Ef);
     }
 }
 ///////////
@@ -398,7 +407,27 @@ void SpinSystem::OutputTorqueFieldToProFitTextFile(const char* filename)
     printf("Generating ProFit data for TorqueField plot...\n");
     FILE *fp;
     fp = fopen(filename, "w");
-    double x, y, r, theta, sx, sy, sz;
+    double x, y, r, theta, sx, sy, sz, NormalizedR, MaxR, MaxRxy;
+    MaxR = 0.0;
+    MaxRxy = 0.0;
+    double MaxSz = 0.0;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        double tau_x, tau_y, tau_z;
+        double length_xy;
+        
+        tau_x = NodeList[i].TorqueField(0);
+        tau_y = NodeList[i].TorqueField(1);
+        tau_z = NodeList[i].TorqueField(2);
+        double length = sqrt(tau_x*tau_x + tau_y*tau_y + tau_z*tau_z);
+        length_xy = sqrt(tau_x*tau_x + tau_y*tau_y);
+        if (MaxR < length)
+            MaxR = length;
+        if (MaxRxy < length_xy)
+            MaxRxy = length_xy;
+        if (MaxSz < fabs(tau_z))
+            MaxSz = fabs(tau_z);
+    }
     for (int i=0; i<this->NumSite; i++)
     {
         x = this->NodeList[i].Location(0);
@@ -407,8 +436,9 @@ void SpinSystem::OutputTorqueFieldToProFitTextFile(const char* filename)
         sy = this->NodeList[i].TorqueField(1);
         sz = this->NodeList[i].TorqueField(2);
         r = sqrt(sx*sx+sy*sy);
+        double totalTorqueLength = sqrt(sx*sx+sy*sy+sz*sz);
         theta = atan2(sy, sx);
-        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/MaxRxy, theta, sz/totalTorqueLength, totalTorqueLength);
     }
     fclose(fp);
 }
@@ -502,4 +532,42 @@ void SpinSystem::OutputSpinTextureGIF(double Xmin, double Xmax, double Ymin, dou
     TheWindow.title ();
     TheWindow.vecfld (xv, yv, xp, yp, this->NumSite, 1901);
     TheWindow.disfin();
+}
+////////////
+double SpinSystem::TotalEnergy(bool CountZeemanTerm)
+{
+    double J_Energy=0.0;
+    double DM_Energy=0.0;
+    double ZeemanEnergy=0.0;
+    std::vector<MagneticNode>::iterator i;
+    int NeighborIndex;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        
+        for (int j=0; j<i->ListOfExchangeNeighbours.size(); j++)
+        {
+            NeighborIndex = i->ListOfExchangeNeighbours[j];
+            // First, calculate the Heisenberg exchange
+            J_Energy += -J*dot(i->Spin, this->NodeList[NeighborIndex].Spin);  
+            // Then, the DM interaction:
+            DM_Energy += +D*dot(i->ListOfOurwardsVectors[j], cross(i->Spin, this->NodeList[NeighborIndex].Spin));
+            
+        }
+        ZeemanEnergy += -dot((this->ExternalField[i->Index]+this->BackgroundField[i->Index]), i->Spin);
+    }
+    if (CountZeemanTerm == true)
+        return J_Energy/2.0+DM_Energy/2.0+ZeemanEnergy;
+    else
+        return J_Energy/2.0+DM_Energy/2.0;
+}
+////////////
+void SpinSystem::RenormalizeLength()
+{
+    std::vector<MagneticNode>::iterator i;
+    double length;
+    for (i=this->NodeList.begin(); i!=this->NodeList.end(); i++)
+    {
+        length = sqrt(dot(i->Spin, i->Spin));
+        i->Spin = i->Spin/length;
+    }
 }
