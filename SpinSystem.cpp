@@ -414,8 +414,7 @@ void SpinSystem::OutputTorqueFieldToProFitTextFile(const char* filename)
     for (int i=0; i<this->NumSite; i++)
     {
         double tau_x, tau_y, tau_z;
-        double length_xy;
-        
+        double length_xy; 
         tau_x = NodeList[i].TorqueField(0);
         tau_y = NodeList[i].TorqueField(1);
         tau_z = NodeList[i].TorqueField(2);
@@ -438,7 +437,8 @@ void SpinSystem::OutputTorqueFieldToProFitTextFile(const char* filename)
         r = sqrt(sx*sx+sy*sy);
         double totalTorqueLength = sqrt(sx*sx+sy*sy+sz*sz);
         theta = atan2(sy, sx);
-        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/MaxRxy, theta, sz/totalTorqueLength, totalTorqueLength);
+        printf("MaxRxy = %le\tMaxR=%le\n", MaxRxy, MaxR);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/MaxRxy, theta, sx/MaxR, sy/MaxR, sz/MaxR, totalTorqueLength);
     }
     fclose(fp);
 }
@@ -450,6 +450,17 @@ void SpinSystem::OutputEffectiveToProFitTextFile(const char* filename)
     fp = fopen(filename, "w");
     double x, y, r, theta, sx, sy, sz;
     vec Field(3);
+    double rMAX=0.0;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        Field = this->EffectiveField[i];
+        sx = Field(0);
+        sy = Field(1);
+        sz = Field(2);
+        r = sqrt(sx*sx+sy*sy+sz*sz);
+        if (r > rMAX)
+            rMAX = r;
+    }
     for (int i=0; i<this->NumSite; i++)
     {
         x = this->NodeList[i].Location(0);
@@ -460,7 +471,7 @@ void SpinSystem::OutputEffectiveToProFitTextFile(const char* filename)
         sz = Field(2);
         r = sqrt(sx*sx+sy*sy);
         theta = atan2(sy, sx);
-        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/rMAX, theta, sx/rMAX, sy/rMAX, sz/rMAX);
     }
     fclose(fp);
 }
@@ -570,4 +581,114 @@ void SpinSystem::RenormalizeLength()
         length = sqrt(dot(i->Spin, i->Spin));
         i->Spin = i->Spin/length;
     }
+}
+/////////////
+void SpinSystem::OutputTextureToProFeitTextFile(const char* filename)
+{
+    printf("Generating ProFit data for SpinTexture plot...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, sx, sy, sz, theta;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        x = this->NodeList[i].Location(0);
+        y = this->NodeList[i].Location(1);
+        sx = this->NodeList[i].Spin(0);
+        sy = this->NodeList[i].Spin(1);
+        sz = this->NodeList[i].Spin(2);
+        r = sqrt(sx*sx+sy*sy);
+        theta = atan2(sy, sx);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\n", x, y, r, theta, sz);
+    }
+    fclose(fp);
+}
+////////
+void SpinSystem::OutputSTTProFit(const char* filename)
+{
+    printf("Generating ProFit data for STT torque plot...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, theta, sx, sy, sz, NormalizedR, MaxR, MaxRxy;
+    MaxR = 0.0;
+    MaxRxy = 0.0;
+    vec TotalTorque(3);
+    double MaxSz = 0.0;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        double tau_x, tau_y, tau_z;
+        TotalTorque = -cross(this->NodeList[i].Spin, this->NodeList[i].TorqueField);
+        double length_xy; 
+        tau_x = TotalTorque(0);
+        tau_y = TotalTorque(1);
+        tau_z = TotalTorque(2);
+        double length = sqrt(tau_x*tau_x + tau_y*tau_y + tau_z*tau_z);
+        length_xy = sqrt(tau_x*tau_x + tau_y*tau_y);
+        if (MaxR < length)
+            MaxR = length;
+        if (MaxRxy < length_xy)
+            MaxRxy = length_xy;
+        if (MaxSz < fabs(tau_z))
+            MaxSz = fabs(tau_z);
+    }
+    for (int i=0; i<this->NumSite; i++)
+    {
+        TotalTorque = -cross(this->NodeList[i].Spin, this->NodeList[i].TorqueField);
+        x = this->NodeList[i].Location(0);
+        y = this->NodeList[i].Location(1);
+        sx = TotalTorque(0);
+        sy = TotalTorque(1);
+        sz = TotalTorque(2);
+        r = sqrt(sx*sx+sy*sy);
+        double totalTorqueLength = sqrt(sx*sx+sy*sy+sz*sz);
+        theta = atan2(sy, sx);
+        //printf("MaxRxy = %le\tMaxR=%le\n", MaxRxy, MaxR);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/MaxRxy, theta, sx/MaxR, sy/MaxR, sz/MaxR, totalTorqueLength);
+    }
+    fclose(fp);
+}
+//////////////////////////////////////
+
+void SpinSystem::OutputOtherTorqueProFit(const char* filename)
+{
+    printf("Generating ProFit data for Other Torque plot...\n");
+    FILE *fp;
+    fp = fopen(filename, "w");
+    double x, y, r, theta, sx, sy, sz, NormalizedR, MaxR, MaxRxy;
+    MaxR = 0.0;
+    MaxRxy = 0.0;
+    vec OtherTorque(3);
+    double MaxSz = 0.0;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        double tau_x, tau_y, tau_z;
+        OtherTorque = -cross(this->NodeList[i].Spin, (this->EffectiveField[i] - this->NodeList[i].TorqueField));
+        double length_xy; 
+        tau_x = OtherTorque(0);
+        tau_y = OtherTorque(1);
+        tau_z = OtherTorque(2);
+        double length = sqrt(tau_x*tau_x + tau_y*tau_y + tau_z*tau_z);
+        length_xy = sqrt(tau_x*tau_x + tau_y*tau_y);
+        if (MaxR < length)
+            MaxR = length;
+        if (MaxRxy < length_xy)
+            MaxRxy = length_xy;
+        if (MaxSz < fabs(tau_z))
+            MaxSz = fabs(tau_z);
+    }
+    for (int i=0; i<this->NumSite; i++)
+    {
+        OtherTorque = -cross(this->NodeList[i].Spin, (this->EffectiveField[i] - this->NodeList[i].TorqueField));
+        x = this->NodeList[i].Location(0);
+        y = this->NodeList[i].Location(1);
+        sx = OtherTorque(0);
+        sy = OtherTorque(1);
+        sz = OtherTorque(2);
+        r = sqrt(sx*sx+sy*sy);
+        double totalTorqueLength = sqrt(sx*sx+sy*sy+sz*sz);
+        theta = atan2(sy, sx);
+        //printf("MaxRxy = %le\tMaxR=%le\n", MaxRxy, MaxR);
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\t% le\t% le\n", x, y, r/MaxRxy, theta, sx/MaxR, sy/MaxR, sz/MaxR, totalTorqueLength);
+    }
+    fclose(fp);
+    
 }

@@ -21,7 +21,7 @@ MovieWindow::MovieWindow(double Xmin, double Xmax, double Ymin, double Ymax, int
     TheWindow.disini ();
     TheWindow.pagera ();
     TheWindow.hwfont ();
-    TheWindow.axspos (400, (int)(1800*YoverX_Ratio)-400);
+    TheWindow.axspos (400, (int)(1800*YoverX_Ratio)-100);
     TheWindow.axslen (1200, (int)(1200*YoverX_Ratio));
     TheWindow.name ("X-axis", "x");
     TheWindow.name ("Y-axis", "y");

@@ -53,10 +53,15 @@ public:
     void OutputTorqueFieldToProFitTextFile(const char* filename);
     void OutputEffectiveToProFitTextFile(const char* filename);
     void OutputSpinTextureGIF(double Xmin, double Xmax, double Ymin, double Ymax, const char* title);
+    void OutputTextureToProFeitTextFile(const char* filename);
+    void OutputSTTProFit(const char* filename);
+    void OutputOtherTorqueProFit(const char* filename);
+    
     vec SkyrmionLocation(void);
     double TotalEnergy(bool CountZeemanTerm);
     void RenormalizeLength(void);
     void UpdateBackgroundField(vec Field);
+    
 };
 
 #endif	/* SPINSYSTEM_HPP */

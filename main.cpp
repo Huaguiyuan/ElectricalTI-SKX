@@ -51,34 +51,34 @@ int main (int argc, char** argv )
     
     double Miu1, Miu2, Miu4;
     double J_Hunds = -1.0;
-    double t = -1.5*fabs(J_Hunds);
-    double Ef = -6.0*fabs(J_Hunds);
-    double J_exchange = /*-J_Hunds;*/-J_Hunds/100.0;
-    double Temperature = 0.000000*J_exchange;
-    double H0=1.0*J_exchange;
+    double t = -0.2*fabs(J_Hunds);
+    double Ef = -1.25*fabs(J_Hunds);
+    double J_exchange = -J_Hunds/100.0;
+    double Temperature = 0.0*J_exchange;
+    double H0=6*J_exchange;
     double alpha = 0.1;
-    double DM = 1.0*J_exchange;//*4.0;
+    double DM = 4.0*J_exchange;//*4.0;
     double I, Sx, Sy, Sz;
-    int UpdateTorquePerStep = 10;
+    int UpdateTorquePerStep = 100;
     bool CalculateTorque = true;
     double TimeStep = 0.01;
     Miu1 =  0.004;
-    double FixedCurrent = 1.0e-6; //Unit is in A
+    double FixedCurrent = 0.7e-6; //Unit is in A
     vec BackgroundField(3);
-    BackgroundField << 0.0 << 0.0 << H0*J_exchange;
+    BackgroundField << 0.0 << 0.0 << H0;
     SpinSystem SpinTexture("input.txt",J_exchange, DM, alpha);
-    ElectronSystem Electrons("input.txt", "openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.000001);
-    SpinTexture.NodeList[5050].Pinned = false;
+    ElectronSystem Electrons("input.txt", "openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.00001);
+    SpinTexture.NodeList[60].Pinned = false;
     double FM_Energy = -2.0*J_exchange*SpinTexture.NodeList.size()-SpinTexture.NodeList.size()*(H0-Temperature);
     if (CalculateTorque == true)
     {  
         SpinTexture.ReadInElectronSiteIndex("ElectronSiteIndices.txt");
     }
     vec ax, ay, az;
-    ax << 11.0 << 0.0 << 0.0;
-    ay << 0.0 << 11.0 << 0.0;
+    ax << 21.0 << 0.0 << 0.0;
+    ay << 0.0 << 31.0 << 0.0;
     az << 0.0 << 0.0 << 51.0;
-    SpinTexture.GenerateNeighborList(1.00001, 1.00001, true, true, false, ax, ay, az);
+    SpinTexture.GenerateNeighborList(1.0001, 1.00001, true, false, false, ax, ay, az);
     if (CalculateTorque == true)
     {
         cx_mat Trans(2,2);
@@ -90,7 +90,11 @@ int main (int argc, char** argv )
     printf("Miu1=%lf\n",Miu1);
     SpinTexture.SetBackgroundField(BackgroundField);
     SpinTexture.SetTemperature(Temperature);
-    MovieWindow OutputWindow(0.0, 11, 0.0, 11.0, SpinTexture.NumSite);
+    /*for (int i=0; i<SpinTexture.NodeList.size(); i++)
+    {
+        SpinTexture.NodeList[i].Temperature = SpinTexture.NodeList[i].Location(0)*(0.9/99.0)+0.0;
+    } This is for the temperature gradient*/
+    MovieWindow OutputWindow(0.0, 22, 0.0, 11.0, SpinTexture.NumSite);
     char Info[256];
     int count = 0;
     vec oldLocation(3);
@@ -100,17 +104,24 @@ int main (int argc, char** argv )
     oldLocation = SpinTexture.SkyrmionLocation();
     for (double Time=0.0; Time<100000000000; Time += TimeStep)
     {
-        //if (Time > 150)
-          //  H0 = H0 + 0.5e-5*TimeStep*100;
-        BackgroundField(2) = H0;
-        FM_Energy = -2.0*J_exchange*SpinTexture.NodeList.size()-SpinTexture.NodeList.size()*(H0-Temperature);
+        /*if (Time > 100)
+            H0 = 2.0/1000.0*Time; This is for increasing external field */
+        BackgroundField(2) = H0*cos(0.0);
+        BackgroundField(0) = H0*sin(0.0);
         SpinTexture.UpdateBackgroundField(BackgroundField);
+        FM_Energy = -2.0*J_exchange*SpinTexture.NodeList.size()-SpinTexture.NodeList.size()*(H0-Temperature);
+        
         if (count%UpdateTorquePerStep == 0 && CalculateTorque == true)
         {
             cx_mat T = Electrons.ThermalAverageTransmission(0.0, Ef);
             Electrons.ListOfOpenBoundaries[0].ChemicalPotential = Miu1+Ef;
             Electrons.ListOfOpenBoundaries[1].ChemicalPotential = -Miu1+Ef;
             SpinTexture.CalculateTorque(Electrons, Ef, J_Hunds);
+            if (count == 0)
+            {
+               // SpinTexture.OutputTorqueFieldToProFitTextFile("TorqueField.txt");
+                //SpinTexture.OutputSpinTextureGIF(0,11,0,11,"")
+            }
         }
         SpinTexture.Evolve(TimeStep, Time, true);
         if (count%UpdateTorquePerStep == 0 && CalculateTorque == true)
@@ -123,12 +134,12 @@ int main (int argc, char** argv )
         if (count%(UpdateTorquePerStep*10) == 0)
         {
             double TotalEnergy;
-           // TotalEnergy = SpinTexture.TotalEnergy(true);
+            TotalEnergy = SpinTexture.TotalEnergy(true);
             SpinTexture.RenormalizeLength();
             double TQ;
-            //TQ = TopologicalCharge(SpinTexture);
-            sprintf(Info, "t=%lf  E=%lf TQ=%lf", Time, (TotalEnergy-FM_Energy)/J_exchange, TQ);
-            fprintf(fpEnergyTrack, "%lf\t%lf\t%1.2lf\t%lf\n", Time, (TotalEnergy-FM_Energy)/J_exchange, TQ, H0);
+            TQ = TopologicalCharge(SpinTexture);
+            sprintf(Info, "t=%lf  E=%lf TQ=%lf H0=%lf", Time, (TotalEnergy-FM_Energy)/J_exchange, TQ, H0/fabs(J_exchange));
+            fprintf(fpEnergyTrack, "%lf\t%lf\t%1.2lf\t%lf\n", Time, (TotalEnergy-FM_Energy)/J_exchange, TQ, H0/fabs(J_exchange));
             fflush(fpEnergyTrack);
             OutputWindow.UpdateWindow(SpinTexture, Info);
             newLocation = SpinTexture.SkyrmionLocation();
@@ -172,14 +183,26 @@ int main (int argc, char** argv )
                     fflush(fpRealTimeCurrent);
                 }
             }
-            //if (count%(UpdateTorquePerStep*100) == 0)
-               // SpinTexture.OutputSpinTextureGIF(0.0, 11.0, 0.0, 11.0, "J=1, D=4, H0=5");
+            if (count%(UpdateTorquePerStep*100) == 0)
+            {
+                char Buffer[256];
+                sprintf(Buffer, "Time = %.2lf H0=%lf", Time, H0/fabs(J_exchange));
+                SpinTexture.OutputSpinTextureGIF(0.0, 22.0, 0.0, 11.0, Buffer);
+            }
         }
-        if (fabs(Time-10.0)<1.0e-5)
+        if (fabs(Time-6700.0)<1.0e-5)
         {
+            Electrons.UpdateHamiltonian(SpinTexture, J_Hunds);
+            Electrons.RenewGR(Ef);
+            SpinTexture.CalculateTorque(Electrons, Ef, J_Hunds);
+            SpinTexture.CalculateEffectiveField(true);
             SpinTexture.OutputEffectiveToProFitTextFile("OutputEffectiveField.txt");
             SpinTexture.OutputTextureToTextFile("OutputTexture.txt");
-            SpinTexture.OutputTorqueFieldToProFitTextFile("OutputTorqueField.txt");
+            //SpinTexture.OutputTorqueFieldToProFitTextFile("OutputTorqueField.txt");
+            SpinTexture.OutputTextureToProFeitTextFile("OutputTextureProFit.txt");
+            Electrons.CalculateCurrentDistribution(Ef);
+            SpinTexture.OutputSTTProFit("OutputTorqueField.txt");
+            Electrons.OutputSpinCurrentMapProFit("CurrentMapProFit.txt", 0, 21, 0, 11);
             
             if(CalculateTorque == true)
             {
@@ -188,7 +211,7 @@ int main (int argc, char** argv )
                // Electrons.OutputSpinCurrentMapProFit("OutputSpinCurrent.txt", 0, 10, 0, 10);
             } 
         }
-        if (Time > 4000000.0)
+        if (Time > 10000.0)
             break;
     }
     fclose(fpSkyrmionLocationX);

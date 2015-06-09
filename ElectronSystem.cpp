@@ -993,3 +993,106 @@ void ElectronSystem::OutputSpinCurrentMapProFit(const char* filename, int Xstart
     }
     fclose(fp);
 }
+/////////
+
+void ElectronSystem::CalculateCurrentDistribution(double Ef)
+{ 
+    printf("Starting to calculate Current OP\n");
+    cx_mat SigmaX, SigmaY, SigmaZ;
+    SigmaX << 0.0 << 1.0 << endr
+           << 1.0 << 0.0 << endr;
+    SigmaY << 0.0 << Complex(0.,-1.) << endr
+           << Complex(0.,1.) << 0.0 << endr;
+    SigmaZ << 1.0 << 0.0 << endr
+           << 0.0 <<-1.0 << endr;   
+    double MaxCurrent, MaxSxCurrent, MaxSyCurrent, MaxSzCurrent;
+    MaxCurrent = MaxSxCurrent = MaxSyCurrent = MaxSzCurrent = 0.0;
+    cx_mat an; // Spectral function from Terminal n;
+    an.set_size(2,2);
+    for (int i=0; i<this->NumSite; i++)
+    {
+        vec Current(3);
+        vec SpinXCurrent(3);
+        vec SpinYCurrent(3);
+        vec SpinZCurrent(3);
+        Current.zeros();
+        SpinXCurrent.zeros();
+        SpinYCurrent.zeros();
+        SpinZCurrent.zeros();
+        if (this->ListOfSites[i].IsBoundary == true)
+        {
+            ListOfSites[i].Current = Current;
+            ListOfSites[i].SpinXCurrent = SpinXCurrent;
+            ListOfSites[i].SpinYCurrent = SpinYCurrent;
+            ListOfSites[i].SpinZCurrent = SpinZCurrent;
+            continue;
+        }
+         
+        cx_mat I_local;
+        I_local.set_size(2,2);
+        I_local.zeros();
+        double DeltaMiu;
+        for (int j=0; j<ListOfSites[i].ListOfTightBindingNeighbors.size(); j++)
+        {
+            int SourceIndex = ListOfSites[i].ListOfTightBindingNeighbors[j];
+            int I, J;
+            I = ListOfSites[i].SiteIndex;
+            J = ListOfSites[SourceIndex].SiteIndex;
+            for (int p=0; p<this->ListOfOpenBoundaries.size(); p++)
+            {
+                DeltaMiu = ListOfOpenBoundaries[p].ChemicalPotential - Ef;
+                an = OnSiteSpectralFunctionFromBoundary(I, J, ListOfOpenBoundaries[p]);
+                I_local += -Complex(0.0, 1.0)*(DeltaMiu*(an-trans(an)));
+            }
+            Current = Current + real(trace(I_local))*(ListOfSites[i].Location-ListOfSites[SourceIndex].Location);
+            SpinXCurrent = SpinXCurrent + real(trace(SigmaX*I_local))*(ListOfSites[i].Location-ListOfSites[SourceIndex].Location);
+            SpinYCurrent = SpinYCurrent + real(trace(SigmaY*I_local))*(ListOfSites[i].Location-ListOfSites[SourceIndex].Location);
+            SpinZCurrent = SpinZCurrent + real(trace(SigmaZ*I_local))*(ListOfSites[i].Location-ListOfSites[SourceIndex].Location);
+        }
+        ListOfSites[i].Current = Current;
+        ListOfSites[i].SpinXCurrent = SpinXCurrent;
+        ListOfSites[i].SpinYCurrent = SpinYCurrent;
+        ListOfSites[i].SpinZCurrent = SpinZCurrent; 
+        double Norm = sqrt(dot(Current, Current));
+        if (Norm > MaxCurrent)
+            MaxCurrent = Norm;
+        Norm = sqrt(dot(SpinXCurrent, SpinXCurrent));
+        if (Norm > MaxSxCurrent)
+            MaxSxCurrent = Norm;
+        Norm = sqrt(dot(SpinYCurrent, SpinYCurrent));
+        if (Norm > MaxSyCurrent)
+            MaxSyCurrent = Norm;
+        Norm = sqrt(dot(SpinZCurrent, SpinZCurrent));
+        if (Norm > MaxSzCurrent)
+            MaxSzCurrent = Norm;
+    }
+    printf("Current calculation done.\n");
+    for (int i=0; i<this->NumSite; i++)
+    {
+        ListOfSites[i].Current = ListOfSites[i].Current/MaxCurrent;
+        ListOfSites[i].SpinXCurrent = ListOfSites[i].SpinXCurrent/MaxSxCurrent;
+        ListOfSites[i].SpinYCurrent = ListOfSites[i].SpinYCurrent/MaxSyCurrent;
+        ListOfSites[i].SpinZCurrent = ListOfSites[i].SpinZCurrent/MaxSzCurrent;  
+    }
+    FILE* fp;
+    fp = fopen("LocalMiu.txt","w");
+    Complex delta;
+    Complex Norm;
+    delta = 0.0;
+    Norm = 0.0;
+    double DeltaMiu;
+    for (int i=0; i<this->NumSite; i++)
+    {
+        for (int p=0; p<this->ListOfOpenBoundaries.size(); p++)
+        {
+            DeltaMiu = this->ListOfOpenBoundaries[p].ChemicalPotential-Ef;
+            delta += trace(OnSiteSpectralFunctionFromBoundary(i,i,ListOfOpenBoundaries[p])*DeltaMiu);
+            Norm += trace(OnSiteSpectralFunctionFromBoundary(i,i,ListOfOpenBoundaries[p]));
+        }
+        fprintf(fp, "%lf\t%lf\t%le\n", ListOfSites[i].Location(0), ListOfSites[i].Location(1), real(delta/Norm));
+                
+    }
+    fclose(fp);
+}    
+
+

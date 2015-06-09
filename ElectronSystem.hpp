@@ -57,6 +57,7 @@ public:
     vec OnSiteSpin(int SiteIndex, double Ef);
     void UpdateHamiltonian(SpinSystem &SpinTexture, double JH);
     void OutputElectronSpinMapProFit(const char* filename, double Ef);
+    void CalculateCurrentDistribution(double Ef);
     
 private: 
     cx_mat ObtainGR_AB(OpenBoundary A, OpenBoundary B);
