@@ -60,7 +60,7 @@ int main (int argc, char** argv )
     double DM = 4.0*J_exchange;//*4.0;
     double I, Sx, Sy, Sz;
     int UpdateTorquePerStep = 100;
-    bool CalculateTorque = true;
+    bool CalculateTorque = false;
     double TimeStep = 0.01;
     Miu1 =  0.004;
     double FixedCurrent = 0.7e-6; //Unit is in A
@@ -68,7 +68,7 @@ int main (int argc, char** argv )
     BackgroundField << 0.0 << 0.0 << H0;
     SpinSystem SpinTexture("input.txt",J_exchange, DM, alpha);
     ElectronSystem Electrons("input.txt", "openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.00001);
-    SpinTexture.NodeList[60].Pinned = false;
+    SpinTexture.NodeList[57].Pinned = false;
     double FM_Energy = -2.0*J_exchange*SpinTexture.NodeList.size()-SpinTexture.NodeList.size()*(H0-Temperature);
     if (CalculateTorque == true)
     {  
@@ -190,28 +190,29 @@ int main (int argc, char** argv )
                 SpinTexture.OutputSpinTextureGIF(0.0, 22.0, 0.0, 11.0, Buffer);
             }
         }
-        if (fabs(Time-6700.0)<1.0e-5)
+        if (fabs(Time-1000.0)<1.0e-5 )//&& CalculateTorque == true)
         {
-            Electrons.UpdateHamiltonian(SpinTexture, J_Hunds);
-            Electrons.RenewGR(Ef);
+            //Electrons.UpdateHamiltonian(SpinTexture, J_Hunds);
+            //Electrons.RenewGR(Ef);
             SpinTexture.CalculateTorque(Electrons, Ef, J_Hunds);
             SpinTexture.CalculateEffectiveField(true);
+            SpinTexture.OutputOtherTorqueProFit("OutputOtherTorque.txt");
             SpinTexture.OutputEffectiveToProFitTextFile("OutputEffectiveField.txt");
             SpinTexture.OutputTextureToTextFile("OutputTexture.txt");
             //SpinTexture.OutputTorqueFieldToProFitTextFile("OutputTorqueField.txt");
             SpinTexture.OutputTextureToProFeitTextFile("OutputTextureProFit.txt");
-            Electrons.CalculateCurrentDistribution(Ef);
+           // Electrons.CalculateCurrentDistribution(Ef);
             SpinTexture.OutputSTTProFit("OutputTorqueField.txt");
-            Electrons.OutputSpinCurrentMapProFit("CurrentMapProFit.txt", 0, 21, 0, 11);
+            //Electrons.OutputSpinCurrentMapProFit("CurrentMapProFit.txt", 0, 21, 0, 11);
             
             if(CalculateTorque == true)
             {
                 //Miu1 = 0.0;
-                CalculateInjectionBandStructure(Electrons);
-               // Electrons.OutputSpinCurrentMapProFit("OutputSpinCurrent.txt", 0, 10, 0, 10);
+                Electrons.ListOfOpenBoundaries[0].CalculateBandStructure("BandStructure.txt");
+                //Electrons.OutputSpinCurrentMapProFit("OutputSpinCurrent.txt", 0, 10, 0, 10);
             } 
         }
-        if (Time > 10000.0)
+        if (Time > 100000.0)
             break;
     }
     fclose(fpSkyrmionLocationX);

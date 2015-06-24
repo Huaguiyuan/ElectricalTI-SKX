@@ -1,6 +1,6 @@
 #include "OpenBoundary.hpp"
 #include <armadillo>
-
+#define PIPI 3.1415926535897932384626
 using namespace arma;
 typedef complex<double> Complex;
 
@@ -164,4 +164,20 @@ cx_mat OpenBoundary::GetSpectralFromHere(cx_mat GR)
     return GR*HugeGamma*trans(GR);
 }
 /////
-
+void OpenBoundary::CalculateBandStructure(const char* filename)
+{
+    FILE *fp;
+    fp = fopen(filename, "w");
+    for (double ka = 0.0; ka <= PIPI; ka+= PIPI/100.0)
+    {
+        cx_mat Hk = F00 + F01*exp(Complex(0.0, 1.0)*ka) + trans(F01)*exp(-Complex(0.0, 1.0)*ka);
+        vec eigval = eig_sym(Hk);
+        fprintf(fp, "% lf\t", ka);
+        for (int i=0; i<eigval.n_rows; i++)
+        {
+            fprintf(fp, "% le\t", eigval(i));
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+}

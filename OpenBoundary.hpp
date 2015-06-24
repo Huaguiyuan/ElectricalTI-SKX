@@ -34,6 +34,7 @@ public:
     cx_mat GetSpectralFromHere(cx_mat GR);
     cx_mat SurfaceGreen;
     void GetSurfaceGreenFunction(double energy, double Eta);
+    void CalculateBandStructure(const char* filename);
     
 };
 
