@@ -10,7 +10,7 @@
 #include <sstream>
 
 
-
+/*
 void CalculateInjectionBandStructure(ElectronSystem &World)
 {
     cx_mat F00 = World.ListOfOpenBoundaries[0].F00;
@@ -30,12 +30,97 @@ void CalculateInjectionBandStructure(ElectronSystem &World)
     }
     fclose(fp);
 }
+*/
+
+/*
+
+void CalculateInjectionBandStructure(double t)
+{
+    ElectronSystem World("input.txt","openBoundaries.txt","BoundaryVirtualShift.txt", t,15.001);
+    cx_mat F00 = World.ListOfOpenBoundaries[0].F00;
+    cx_mat F01 = World.ListOfOpenBoundaries[0].F01;
+    FILE* fp;
+    FILE* fp2;
+    fp = fopen("BandStructure.txt","w");
+    fp2 = fopen("EigVec.txt","w");
+    cout<<endl<<"size of F00"<<F01.n_rows<<F01.n_cols<<endl;
+    for (double ka = 0.0; ka <= PIPI; ka+= PIPI/100.0)
+    {
+        cx_mat Hk = F00 + F01*exp(Complex(0.0, 1.0)*ka) + trans(F01)*exp(-Complex(0.0, 1.0)*ka);
+        //vec eigval = eig_sym(Hk);
+        vec eigval;
+        cx_mat eigvec;
+        eig_sym(eigval,eigvec,Hk);
+        fprintf(fp, "% lf\t", ka);
+        
+        if(ka == 0.0)
+        {
+            //cout<<"\n eigvec no of col"<<eigvec.n_cols<<"\n";
+            //cout<<"\n"<<eigvec(0,0)<<"\n";
+            //cout<<"\n"<<abs(eigvec(0,0))<<"\n";
+            //fprintf(fp2, "% lf\n", ka);
+            
+            for (int i2=0;i2<eigvec.n_rows;i2++)
+            {
+                for(int j2=0;j2<eigvec.n_cols;j2++)
+                {
+                    fprintf(fp2, "% le\t", abs(eigvec(i2,j2)));
+                }
+                fprintf(fp2, "\n");
+            }
+            
+            
+        }
+        
+        for (int i=0; i<eigval.n_rows; i++)
+        {
+            fprintf(fp, "% le\t", eigval(i));
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+    fclose(fp2);
+}
+*/
+
+
+ 
+
+
+
+int main (int argc, char** argv )
+{
+    FILE* fp1;
+    fp1 = fopen("./OUTPUT/Dispersion.txt","w");
+    FILE* fp4;
+    fp4 = fopen("./OUTPUT/SzExpectation.txt","w");
+    double JbyTstart = -0.25*15; //0.05
+    double JbyTend = 0.25*15;  //0.25*15
+    double JbyTincrement = (JbyTend  - JbyTstart)/50;
+    
+    while(JbyTstart<JbyTend)
+    {
+        double JbyT = JbyTstart;
+        //printf("\n Neighboring site distance = 15A,(width)numsite::AlongX= 11, AlongY= 11 \n");
+        //CalculateInjectionBandStructure(-1.00);
+        ElectronSystem World("./INPUT/input.txt","./INPUT/openBoundaries.txt","./INPUT/BoundaryVirtualShift.txt", JbyT, 15.001);
+        //World.CalculateBoundState();
+        World.GenerateH01x();
+        World.GenerateH01y();
+        World.CalculateDispersion();
+        JbyTstart = JbyTstart + JbyTincrement;
+        
+    }
+    fclose(fp1);
+    fclose(fp4);
+}
+
 
 
 
 // The following code is used to test the 2-terminal case with a 21by11 ribbon.
 
-
+/*
 int main (int argc, char** argv )
 {
     system("rm ./*.gif -f");
@@ -90,10 +175,10 @@ int main (int argc, char** argv )
     printf("Miu1=%lf\n",Miu1);
     SpinTexture.SetBackgroundField(BackgroundField);
     SpinTexture.SetTemperature(Temperature);
-    /*for (int i=0; i<SpinTexture.NodeList.size(); i++)
+    for (int i=0; i<SpinTexture.NodeList.size(); i++)
     {
         SpinTexture.NodeList[i].Temperature = SpinTexture.NodeList[i].Location(0)*(0.9/99.0)+0.0;
-    } This is for the temperature gradient*/
+    } //This is for the temperature gradient
     MovieWindow OutputWindow(0.0, 22, 0.0, 11.0, SpinTexture.NumSite);
     char Info[256];
     int count = 0;
@@ -104,8 +189,8 @@ int main (int argc, char** argv )
     oldLocation = SpinTexture.SkyrmionLocation();
     for (double Time=0.0; Time<100000000000; Time += TimeStep)
     {
-        /*if (Time > 100)
-            H0 = 2.0/1000.0*Time; This is for increasing external field */
+        if (Time > 100)
+            H0 = 2.0/1000.0*Time; //This is for increasing external field 
         BackgroundField(2) = H0*cos(0.0);
         BackgroundField(0) = H0*sin(0.0);
         SpinTexture.UpdateBackgroundField(BackgroundField);
@@ -218,10 +303,10 @@ int main (int argc, char** argv )
     fclose(fpSkyrmionLocationX);
     fclose(fpSkyrmionLocationY);
     fclose(fpRealTimeCurrent);
-    fclose(fpEnergyTrack);
+    fclose(fpEnergyTrack); 
 }
     
-
+*/
 
 /*  
  // The following is the code to calculate the NEGF_LLG in the cross-bar case.

@@ -640,7 +640,7 @@ void CalculateHallEffect(double Temperature, double Ef, double Miu1,
     fclose(fp);*/
 }
 /////////
-void CalculateInjectionBandStructure(double t)
+/*void CalculateInjectionBandStructure(double t)
 {
     ElectronSystem World("input.txt","openBoundaries.txt", "BoundaryVirtualShift.txt", t, 1.000001);
     cx_mat F00 = World.ListOfOpenBoundaries[0].F00;
@@ -659,7 +659,95 @@ void CalculateInjectionBandStructure(double t)
         fprintf(fp, "\n");
     }
     fclose(fp);
+}*/
+
+
+
+void CalculateInjectionBandStructure(double t)
+{
+    ElectronSystem World("input.txt","openBoundaries.txt","BoundaryVirtualShift.txt", t,15.001);
+    cx_mat F00 = World.ListOfOpenBoundaries[0].F00;
+    cx_mat F01 = World.ListOfOpenBoundaries[0].F01;
+    FILE* fp;
+    FILE* fp2;
+    FILE* fp3;
+    fp = fopen("BandStructure.txt","w");
+    fp2 = fopen("EigVec.txt","w");
+    fp3 = fopen("SzExpectationValue.txt","w");
+    cout<<endl<<"size of F00  = "<<F01.n_rows<<"   by "<<F01.n_cols<<endl;
+    cx_mat SZ(100,100);
+    cx_mat psi, psihc;
+    cx_mat SzExpectationValue;
+    SZ.eye();
+    int j3 = 0;
+    
+    for(int i3 = 0;i3 <50;i3++)
+    {
+        j3 = (2*i3+1);
+        //cout <<"\n j3 ="<<j3<<"\n";
+        SZ(j3,j3) = -1;
+    }
+    
+    
+    //cout<<SZ;
+    
+    for (double ka = 0.0; ka <= PIPI; ka+= PIPI/100.0)
+    {
+        cx_mat Hk = F00 + F01*exp(Complex(0.0, 1.0)*ka) + trans(F01)*exp(-Complex(0.0, 1.0)*ka);
+        //vec eigval = eig_sym(Hk);
+        vec eigval;
+        cx_mat eigvec;
+        eig_sym(eigval,eigvec,Hk);
+        fprintf(fp, "% lf\t", ka);
+        psi = eigvec.col(50);
+        //psihc = trans(psi);
+        
+        
+        
+        SzExpectationValue = trans(psi)*SZ*psi;
+        fprintf(fp3, "% lf\t  % lf\t  % lf\t % lf\n", ka,abs(SzExpectationValue(0,0)),real(SzExpectationValue(0,0)),imag(SzExpectationValue(0,0)));
+        //fprintf(fp3, "\n");
+        
+        
+        if(ka == 0.0)
+        {
+            //cout<<"\n eigvec no of col"<<eigvec.n_cols<<"\n";
+            //cout<<"\n"<<eigvec(0,0)<<"\n";
+            //cout<<"\n"<<abs(eigvec(0,0))<<"\n";
+            //fprintf(fp2, "% lf\n", ka);
+            
+            for (int i2=0;i2<eigvec.n_rows;i2++)
+            {
+                for(int j2=0;j2<eigvec.n_cols;j2++)
+                {
+                    fprintf(fp2, "% le\t", abs(eigvec(i2,j2)));
+                }
+                fprintf(fp2, "\n");
+            }
+            
+            
+            
+            //SzExpectationValue = trans(psi)*SZ*psi;
+            //cout<<"\n SzExpectationValue ="<<SzExpectationValue<<"\n";
+            //cout<<"\n psi row col "<<psihc.n_rows<<"  "<<psihc.n_cols<<"\n";
+            
+            
+        }
+        
+        for (int i=0; i<eigval.n_rows; i++)
+        {
+            fprintf(fp, "% le\t", eigval(i));
+        }
+        fprintf(fp, "\n");
+    }
+    fclose(fp);
+    fclose(fp2);
+    fclose(fp3);
 }
+
+
+
+
 /////////////
 double TopologicalCharge(SpinSystem &input)
 {

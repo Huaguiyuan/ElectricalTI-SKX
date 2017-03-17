@@ -34,7 +34,44 @@ void OpenBoundary::GetSurfaceGreenFunction(double energy, double Eta)
 
 void OpenBoundary::ConstructF00F01(double CouplingT, double CouplingCutoff)
 {
+   
+    //the following variables occur in electronsite, electron system, openboundary
+    double deltaX = 15e-10; //interatomic distance along x direction
+    double deltaY = deltaX; //intteratomic distance along y direction
+    double hv = 3.2955e-10*0.015; //hbar*VF in electron volt
+    double gamma = 5e-10*1;
+    
+    cx_mat Pauli_X(2,2);
+    cx_mat Pauli_Y(2,2);
+    cx_mat Pauli_Z(2,2);
+    Pauli_X.zeros();
+    Pauli_Y.zeros();
+    Pauli_Z.zeros();
+    Pauli_X(0,1) = 1.0;
+    Pauli_X(1,0) = 1.0;
+    Pauli_Y(0,1) = Complex(0.0, -1.0);
+    Pauli_Y(1,0) = Complex(0.0, 1.0);
+    Pauli_Z(0.0) = 1.0;
+    Pauli_Z(1,1) = -1.0;
+    
+    cx_mat tx(2,2);
+    cx_mat txhc(2,2);
+    cx_mat ty(2,2);
+    cx_mat tyhc(2,2);
+    
+    tx.zeros();
+    txhc.zeros();
+    ty.zeros();
+    tyhc.zeros();
+    
+    txhc = hv*((Complex(0.0, -1.0)/(2*deltaX))*(Pauli_Y)-(gamma/(deltaX*deltaX))*(Pauli_Z));
+    tx = trans(txhc);
+    tyhc = hv*((Complex(0.0, 1.0)/(2*deltaX))*(Pauli_X)-(gamma/(deltaX*deltaX))*(Pauli_Z));
+    ty = trans(tyhc);
+    
+    
     int N_matrix = this->TotalBoundaryMatrixSize;
+    //cout<<"N_matrix"<<N_matrix<<"\n"; //**************
     this->F00.set_size(N_matrix, N_matrix);
     this->F01.set_size(N_matrix, N_matrix);
     F00.zeros();
@@ -51,6 +88,8 @@ void OpenBoundary::ConstructF00F01(double CouplingT, double CouplingCutoff)
         I.eye(BlockSize, BlockSize);
         F00.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1)
                 = ListOfBoundarySites[i].OnSiteBlock;
+        //cout<<"\n F00 onsite block  "<<ListOfBoundarySites[i].OnSiteBlock<<"\n";
+        
         // now put the coupling blocks in;
         int NeighbourIndex;
         for (int j=0; j<ListOfBoundarySites.size(); j++)
@@ -62,38 +101,44 @@ void OpenBoundary::ConstructF00F01(double CouplingT, double CouplingCutoff)
             {
                 T = ListOfBoundarySites[i].ListOfOutwardsCouplingBlocks[NeighbourIndex];
                 F00.submat(i*BlockSize, j*BlockSize, (i+1)*BlockSize-1, (j+1)*BlockSize-1) = T;
+                /*if(j>i)
+                {
+                    F00.submat(i*BlockSize, j*BlockSize, (i+1)*BlockSize-1, (j+1)*BlockSize-1) = tyhc;
+                }
+                
+                else if(j<i)
+                {
+                    F00.submat(i*BlockSize, j*BlockSize, (i+1)*BlockSize-1, (j+1)*BlockSize-1) = ty;
+                }*/
+                
             }
         }
-       /* I.eye(BlockSize, BlockSize);
-        F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = I*CouplingT;*/
-        //The above two lines were the cheating code neglecting the detailed atomic structure at the boundary.
-        //Now we formally formulate the F01 matrix.
+        I.eye(BlockSize, BlockSize);
         
+        if(this->BoundaryIndex==0)
+        {
+            F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = tx; //tonmoy changed here
+        }
         
+        else if(this->BoundaryIndex==1)
+        {
+            F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = txhc; //tonmoy changed here
+        }
+        //F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1) = tx; //tonmoy changed here
+        //cout<<"\n F01"<<F01.submat(i*BlockSize, i*BlockSize, (i+1)*BlockSize-1, (i+1)*BlockSize-1)<<"\n";
+        // then take the coupling matrices 
     }
     
-    for (int i=0; i<this->ListOfBoundarySites.size(); i++)
-    {
-        for (int j=0; j<this->ListOfBoundarySites.size(); j++)
-        {
-            int I, J;
-            I = this->StartingRowInBoundaryMatrix[i];
-            J = this->StartingRowInBoundaryMatrix[j];
-            int BlockSizeRow = ListOfBoundarySites[i].OnSiteBlock.n_rows;
-            int BlockSizeCol = ListOfBoundarySites[j].OnSiteBlock.n_rows;
-            T.resize(BlockSizeRow, BlockSizeCol);
-            T.eye(BlockSizeRow, BlockSizeCol);
-            T = T*CouplingT;
-            vec r(3);
-            r = (ListOfBoundarySites[i].Location) - (ListOfBoundarySites[j].Location+this->VirtualBoundaryShift);
-            double distanceSquared = r(0)*r(0)+r(1)*r(1)+r(2)*r(2);
-            if (distanceSquared < CouplingCutoff*CouplingCutoff)
-            {
-                F01.submat(I, J, I+BlockSizeRow-1, J+BlockSizeCol-1) = T;
-            }
-        }
-    }
+    //Here starts implementing periodic boundary condition
+    
+    
+    /*F00.submat(0,F00.n_cols-2,1,F00.n_cols-1) = ty;
+    F00.submat(F00.n_rows-2,0,F00.n_rows-1,1) = tyhc;*/
+    //Here ends implementing periodic boundary condition
+ 
+
 }
+
 
 ///////////////
 void OpenBoundary::GetSelfEnergy(double energy)

@@ -9,6 +9,7 @@
 #include <functional> 
 #include <cctype>
 #include <locale>
+#include <string>
 
 //#include <boost/algorithm/string.hpp>
 
@@ -42,6 +43,18 @@ double ElectronSystem::dFdE(double energy, double Ef, double temperature)
        	return (-1.0/kT)*1.0/(exp(-x)+2.0+exp(x));
 }
 
+
+void ElectronSystem::CreateSystemVariableAndConstants(void)
+{
+    this->NumberOfSiteAlongX = 5;
+    this->NumberOfSiteAlongY = 5;
+    this->delta = 15e-10;
+    this->gamma = 5e-10*1;
+    this->hv = 3.2955e-10*0.015;
+    printf("\n Neighboring site distance = 15A,(width)numsite::AlongX= %d, AlongY= %d \n",this->NumberOfSiteAlongX,this->NumberOfSiteAlongY);
+}
+
+
 void ElectronSystem::ReadInGeometry(const char* filename)
 {
     std::ifstream input(filename);
@@ -62,11 +75,16 @@ void ElectronSystem::ReadInGeometry(const char* filename)
             break;
         std::istringstream iss(line);
         iss >> x >> y >> z >> sx >> sy >> sz >> JH >> t >> phi;
+        //iss >> x >> y >> z >> sx >> sy >> sz;
+        //sx = 0;
+        //sy = 0;
+        //sz = 1;
         newSpin << sx << sy << sz;
         //newSpin.print();
         newLocation << x << y << z;
         //newLocation.print();
-        ElectronSite temp(newSpin, newLocation, JH, phi);
+        JH = -(this->JbyT*this->hv)/(this->delta);
+        ElectronSite temp(newSpin, newLocation, JH, t);
         temp.SiteIndex = countSite;
         countTotalSize += temp.OnSiteBlock.n_cols;
         temp.StartingRowNumber = countTotalSize - temp.OnSiteBlock.n_rows;
@@ -76,10 +94,15 @@ void ElectronSystem::ReadInGeometry(const char* filename)
     } while (!input.eof());
     this->NumSite = countSite;
     this->TotalMatrixSize = countTotalSize;
+    cout<<"JbtT="<<this->JbyT<<"\n";
     input.close();
+    
+    
+   
+    
 }
 /////////////////////////////////////////
-void ElectronSystem::CreateNeighbourList(double CutoffRange, double t)
+/*void ElectronSystem::CreateNeighbourList(double CutoffRange, double t)
 {
     cx_mat T;
     vec r(3);
@@ -99,7 +122,93 @@ void ElectronSystem::CreateNeighbourList(double CutoffRange, double t)
                  //   NodeList[i].ListOfStrayFieldNeighbours.push_back(j);
         }
     }
+}*/
+
+
+void ElectronSystem::CreateNeighbourList(double CutoffRange, double t)
+{
+    cx_mat T;
+    vec r(3);
+    //the following variables occur in electronsite, electron system, openboundary
+    int width = this->NumberOfSiteAlongX; //number of site along y
+    int length = this->NumberOfSiteAlongY; //number of site along x
+    double deltaX = this->delta; //interatomic distance along x direction
+    double deltaY = this->delta; //intteratomic distance along y direction
+    double hv = this->hv; //hbar*VF in electron volt
+    double gamma = this->gamma;
+    
+    cx_mat Pauli_X(2,2);
+    cx_mat Pauli_Y(2,2);
+    cx_mat Pauli_Z(2,2);
+    Pauli_X.zeros();
+    Pauli_Y.zeros();
+    Pauli_Z.zeros();
+    Pauli_X(0,1) = 1.0;
+    Pauli_X(1,0) = 1.0;
+    Pauli_Y(0,1) = Complex(0.0, -1.0);
+    Pauli_Y(1,0) = Complex(0.0, 1.0);
+    Pauli_Z(0.0) = 1.0;
+    Pauli_Z(1,1) = -1.0;
+    
+    cx_mat tx(2,2);
+    cx_mat txhc(2,2);
+    cx_mat ty(2,2);
+    cx_mat tyhc(2,2);
+    
+    tx.zeros();
+    txhc.zeros();
+    ty.zeros();
+    tyhc.zeros();
+    
+    this->txhc = hv*((Complex(0.0, -1.0)/(2*deltaX))*(Pauli_Y)-(gamma/(deltaX*deltaX))*(Pauli_Z));  //points to the right in the x direction
+    txhc = this->txhc;
+    tx = trans(txhc);
+    this->tyhc = trans(hv*((Complex(0.0, 1.0)/(2*deltaX))*(Pauli_X)-(gamma/(deltaX*deltaX))*(Pauli_Z))); //points up in the y direction
+    tyhc = this->tyhc;
+    ty = trans(tyhc);
+
+    
+    
+    for (int i=0; i<NumSite; i++)
+    {
+        //cout<<"\n for site "<<i<<"neighbour =";
+        if(((i+1)%width)!=0)
+        {
+                ListOfSites[i].ListOfTightBindingNeighbors.push_back(i+1);
+                ListOfSites[i].ListOfOutwardsCouplingBlocks.push_back(txhc);
+               // cout<<i+1<<"\t";
+        }
+        if((i%width)!=0)
+        {
+                ListOfSites[i].ListOfTightBindingNeighbors.push_back(i-1);
+                ListOfSites[i].ListOfOutwardsCouplingBlocks.push_back(tx);
+                //cout<<i-1<<"\t";
+        }
+
+        if((i+width)<=(NumSite-1))
+        {
+                ListOfSites[i].ListOfTightBindingNeighbors.push_back(i+width);
+                ListOfSites[i].ListOfOutwardsCouplingBlocks.push_back(tyhc);
+                //cout<<i+width<<"\t";
+        }
+        
+        if((i-width)>=0)
+        {
+                ListOfSites[i].ListOfTightBindingNeighbors.push_back(i-width);
+                ListOfSites[i].ListOfOutwardsCouplingBlocks.push_back(ty);
+                //cout<<i-width<<"\t";
+        }
+        
+         
+    }
+    
+    
+    printf("create neighborlist done \n"); //tonmoy
+    
 }
+
+
+
 /////////////////////////////////////////
 void ElectronSystem::GenerateHamiltonian()
 {
@@ -120,6 +229,194 @@ void ElectronSystem::GenerateHamiltonian()
         }        
     } 
 }
+
+
+
+void ElectronSystem::GenerateH01x()       //generates coupling matrix between boundary sites for calculating dispersion in the x direction
+{
+    //works as long as brillouin zone is rectangular
+    this->H01x.set_size(this->TotalMatrixSize, this->TotalMatrixSize);
+    this->H01x.zeros();
+    int nx = this->NumberOfSiteAlongX;
+    int ny = this->NumberOfSiteAlongY;
+    int n1 = 0; //index of first member of first row
+    int n2= nx-1; //index of last member of first row
+    
+    for(int i=0;i<ny;i++)
+    {
+        //cout<<n1<<"  "<<n2<<"\n";
+        this->H01x.submat(n2*2,n1*2,n2*2+1,n1*2+1) = this->txhc;  //2 means number of on site basis
+        n1 = n1 + nx;
+        n2 = n2 + nx;       
+        
+    }  
+ 
+}
+
+
+
+void ElectronSystem::GenerateH01y()       //generates coupling matrix between boundary sites for calculating dispersion in the x direction
+{
+    //works as long as brillouin zone is rectangular
+    this->H01y.set_size(this->TotalMatrixSize, this->TotalMatrixSize);
+    this->H01y.zeros();
+    int nx = this->NumberOfSiteAlongX;
+    int ny = this->NumberOfSiteAlongY;
+    int n1 = 0; //index of first member of first column
+    int n2= nx*(ny-1) ; //index of last member of first column
+    
+    for(int i=0;i<nx;i++)
+    {
+        //cout<<n1<<"  "<<n2<<"\n";
+        this->H01y.submat(n2*2,n1*2,n2*2+1,n1*2+1) = this->tyhc;  //2 means number of on site basis
+        n1 = n1 + 1;
+        n2 = n2 + 1;       
+        
+    }  
+ 
+}
+
+void ElectronSystem::CalculateDispersion()
+{
+    
+        double pi = 3.14156;
+        double kx, ky;
+        int berryCurvatureforBand ;
+                
+        FILE* fp1;
+        fp1 = fopen("./OUTPUT/Dispersion.txt","a");
+        FILE* fp2;
+        fp2 = fopen("./OUTPUT/Psi.txt","w");
+        FILE* fp3;
+        fp3 = fopen("./OUTPUT/BerryCurvature.txt","w");
+        FILE* fp4;
+        fp4 = fopen("./OUTPUT/SzExpectation.txt","a");
+        cout<<"\n calculating Dispersion \n";
+        cx_mat HK;
+        
+        double nanoribbon = 0.0;
+        double psiSquare;
+        double BerryCurvature2;
+        cx_mat dummy1;
+        cx_mat dummy2;
+        cx_mat Pauli_Z(2,2);
+        Pauli_Z.zeros();
+        Pauli_Z(0.0) = 1.0;
+        Pauli_Z(1,1) = -1.0;
+        cx_mat SZ(50,50);
+        SZ.zeros();
+        
+        for(int i=0;i<50;i=i+2)
+        {
+            SZ.submat(i,i,i+1,i+1) = Pauli_Z;
+        }
+        
+        //cout<<SZ;
+        
+        //fprintf(fp7,"Summing Berry Curvature for all Bands for a particular K point and Printing that value \n");
+        fprintf(fp1, "% le\t",this->JbyT);
+        for(ky = 0;ky<= 6.3;ky = ky + pi/10)  //pi, put 3.2 instead of pi, originall pi/30
+        {
+            
+            for(kx = 0;kx<=6.3 ;kx = kx + pi/10) //pi, put 3.2 instead of pi, originally pi/30
+            {
+                
+                //cout<<"kx ="<<kx<<"ky ="<<ky<<"\n";
+                //if(ky!=kx)
+                    //continue;
+                
+                HK = this->Hamiltonian + (this->H01x)*exp(Complex(0.0, 1.0)*kx) + trans(this->H01x)*exp(-Complex(0.0, 1.0)*kx)
+                        + (this->H01y)*exp(Complex(0.0, 1.0)*ky)  + trans(this->H01y)*exp(-Complex(0.0, 1.0)*ky);
+                
+                eig_sym(this->eigval,this->eigvec,HK);
+                
+            /*    dummy2 = trans(this->eigvec.col(24))*SZ*this->eigvec.col(24);
+               // cout<<real(dummy2(0,0));
+                fprintf(fp4, "%le\t%le",this->JbyT,real(dummy2(0,0)));
+                fprintf(fp4, "\n");   */
+                
+                //each wavefunction armadillo calculates is indeed normalized
+                //ends checking whether wavefunction is normalized
+                
+                
+                fprintf(fp3, "% le\t% le\t",kx,ky);
+                for(int n3= 0;n3<=-1;n3++)   //under normal condition, n3=0 to 49
+                {
+                    fprintf(fp3, "% le\t",BerryCurvature(kx,ky,n3));
+                }
+                fprintf(fp3, "\n");
+                
+                  
+                
+                //fprintf(fp1, "% le\t% le\t",kx,ky);
+                //for(int k3=0;k3<this->eigval.n_rows;k3++)
+                for(int k3=this->NumberOfSiteAlongX*this->NumberOfSiteAlongY;k3<this->NumberOfSiteAlongX*this->NumberOfSiteAlongY+8;k3++)
+                {
+                      fprintf(fp1, "% le\t",this->eigval(k3,0));
+                      //fprintf(fp1, "\n");
+                }
+               
+                
+                
+            }
+            
+            
+        }
+        
+
+        
+        
+
+   /*
+        for (int i22=0;i22<this->eigvec.n_rows;i22++)
+        {
+            for(int j22=0;j22<this->eigvec.n_cols;j22++)
+            {
+                fprintf(fp2, "% le\t", abs(this->eigvec(i22,j22))*abs(this->eigvec(i22,j22)));
+                
+            }
+                fprintf(fp2, "\n");
+    } 
+    */    
+        fprintf(fp1, "\n");
+        fclose(fp1);
+        fclose(fp2);
+        fclose(fp3);
+        fclose(fp4);
+}
+
+
+
+double ElectronSystem::BerryCurvature(double kx,double ky, int n)
+{
+    //calculating Berry Curvature for nth band at brillouin zone point kx, ky
+    cx_mat dhdkx = (this->H01x)*exp(Complex(0.0, 1.0)*kx) - trans(this->H01x)*exp(-Complex(0.0, 1.0)*kx);
+    cx_mat dhdky = (this->H01y)*exp(Complex(0.0, 1.0)*ky)  - trans(this->H01y)*exp(-Complex(0.0, 1.0)*ky);
+    
+    cx_mat  bc1, bc2, bc3;   //bc contains berry curvature
+    double bc = 0.0;
+    
+    for(int i=0;i<this->TotalMatrixSize;i++)
+    {
+        if(i==n)
+            continue;
+        
+       
+        bc1 = trans((this->eigvec).col(n))*dhdkx*(this->eigvec).col(i);
+        bc2 = trans((this->eigvec).col(i))*dhdky*(this->eigvec).col(n);
+        bc3 = (bc1*bc2)/((this->eigval(n,0)-this->eigval(i,0))*(this->eigval(n,0)-this->eigval(i,0)));
+        
+        
+        bc = bc + 2*imag(bc3(0,0)); //notice the factor 2 here, since a- conj(a) = i*2Imag(a))
+
+    }
+    
+    bc = bc * -(this->NumberOfSiteAlongX*this->delta*this->NumberOfSiteAlongY*this->delta);   //that factor = (11*15A0)^2
+    
+    return bc;
+}
+
+
 /////////////////////////
 
 void ElectronSystem::ReadInOpenBoundaries(const char* filename)
@@ -222,13 +519,13 @@ void ElectronSystem::CalculateGR(double energy)
         //printf("added\n");
     }
     OpenHamiltonian = energy*I - OpenHamiltonian;
-    //printf("inverting...\n");
+    printf("inverting...\n");
     //ofstream test("testdebug.txt");
     //OpenHamiltonian.print(test);
     GR = inv(OpenHamiltonian);
 }
 //////////////
-void ElectronSystem::RenewGR(double energy)
+void ElectronSystem::RenewGR(double energy) //no need
 {
     //this->GenerateHamiltonian();
     cx_mat OpenHamiltonian;
@@ -256,7 +553,7 @@ void ElectronSystem::RenewGR(double energy)
     GR = inv(OpenHamiltonian);
 }
 //////////////
-void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture, double JH)
+void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture, double JH) //no need
 {
     cx_mat Pauli_X(2,2);
     cx_mat Pauli_Y(2,2);
@@ -286,7 +583,7 @@ void ElectronSystem::UpdateHamiltonian(SpinSystem &SpinTexture, double JH)
     this->GenerateHamiltonian();
 }
 /////////////
-cx_mat ElectronSystem::ObtainGR_AB(OpenBoundary A, OpenBoundary B)
+cx_mat ElectronSystem::ObtainGR_AB(OpenBoundary A, OpenBoundary B) 
 {
     cx_mat GR_AB;
     GR_AB.zeros();
@@ -349,18 +646,301 @@ void ElectronSystem::GenerateBoundaryHamiltonians(double CouplingT, double Coupl
 }
 ///////////
 ElectronSystem::ElectronSystem(const char* inputFilename, const char* boundaryFilename,
-                               const char* inputBoundaryShiftFilename, double t, double CouplingCutoff)
+                               const char* inputBoundaryShiftFilename, double JbyT,double CouplingCutoff)
 {
+    double t = -1.00;
+    this->JbyT = JbyT; 
+    this->CreateSystemVariableAndConstants();
     this->ReadInGeometry(inputFilename);
     this->CreateNeighbourList(CouplingCutoff, t);
     //this->PrintNeighbourList();
-    printf("%d\n", this->TotalMatrixSize);  
+    printf("\n total matrix size = %d\n", this->TotalMatrixSize);  
     this->GenerateHamiltonian();
-    this->ReadInOpenBoundaries(boundaryFilename);
-    this->ReadInOpenBoundaryVirtialShift(inputBoundaryShiftFilename);
-    this->GenerateBoundaryHamiltonians(t, CouplingCutoff);
+    //this->ReadInOpenBoundaries(boundaryFilename);
+    //this->ReadInOpenBoundaryVirtialShift(inputBoundaryShiftFilename);
+    //this->GenerateBoundaryHamiltonians(t, CouplingCutoff);
+    //this->PrintReadInSkyrmionTexture();
+    //this->CalculateBoundState();
+    //this->CalculateVelocity2();
 }
+
+
+void ElectronSystem::CalculateVelocity(void)
+{
+    FILE* fp;
+    fp = fopen("velocityField.txt","w");
+    cout<<"\n Calculating velocity Field for five lowest Hole & Electron state\n";
+    int totalNumberofSite = this->NumSite;
+    int iPlus1, iMinus1, jPlus1, jMinus1; //neighbour index for each site
+    int numberOfSiteAlongX = this->NumberOfSiteAlongX;
+    int numberOfSiteAlongY = this->NumberOfSiteAlongY;
+    double delta = this->delta; //interatomic distance along x direction
+    
+    
+    for(int k4=2495;k4<2506;k4++) // k4  =  k4 th eigenvalue
+    {
+        mat a(2,2);
+        a.eye();
+        cx_mat iPlus = (1/delta)*Complex(0.0, 1.0)*a;
+        cx_mat iMinus = (1/delta)*Complex(0.0, -1.0)*a;
+        cx_mat vx(this->TotalMatrixSize,this->TotalMatrixSize),vy(this->TotalMatrixSize,this->TotalMatrixSize);
+        vx.zeros(), vy.zeros();
+        cx_mat avgX, avgY;
+        
+        
+        for(int k10=0;k10<totalNumberofSite;k10++) //k10 = index of each site
+        {
+            //calculating velocity x component
+            if((k10%numberOfSiteAlongX)==0)
+            {
+                iPlus1 = k10+1;
+                iMinus1 = (k10+numberOfSiteAlongX)-1;       
+            }
+            else if(((k10+1)%numberOfSiteAlongX)==0)
+            {
+                iPlus1 = k10-(numberOfSiteAlongX-1);
+                iMinus1 = k10-1;  
+            }
+            else
+            {
+                iPlus1 = k10+1;
+                iMinus1 = k10-1;  
+            }
+            
+            vx.submat(k10*2,iPlus1*2,k10*2+1,iPlus1*2+1) = iPlus;
+            vx.submat(k10*2,iMinus1*2,k10*2+1,iMinus1*2+1) = iMinus;
+            
+         
+            
+            //calculating velocity y component
+            if((k10-numberOfSiteAlongX)<0)
+            {
+                jPlus1 = k10+numberOfSiteAlongX;
+                jMinus1 = k10 + numberOfSiteAlongX*(numberOfSiteAlongX-1);       
+            }
+            else if((k10+numberOfSiteAlongX)>(totalNumberofSite-1))
+            {
+                jPlus1 = k10 - numberOfSiteAlongX*(numberOfSiteAlongX-1);
+                jMinus1 = k10-numberOfSiteAlongX;  
+            }
+            else
+            {
+                jPlus1 = k10+numberOfSiteAlongX;
+                jMinus1 = k10-numberOfSiteAlongX;  
+            }
+            
+            
+            vy.submat(k10*2,jPlus1*2,k10*2+1,jPlus1*2+1) = iPlus;
+            vy.submat(k10*2,jMinus1*2,k10*2+1,jMinus1*2+1) = iMinus;
+ 
+        }
+        
+        
+        cx_mat Ix, Iy;
+        Ix = vx*this->eigvec.col(k4);
+        Iy = vy*this->eigvec.col(k4);
+        
+        
+        
+        for(int k10=0;k10<totalNumberofSite;k10++)
+        {
+            avgX = trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*Ix.submat(k10*2,0,k10*2+1,0);
+            avgY = trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*Iy.submat(k10*2,0,k10*2+1,0);
+            fprintf(fp, "% le\t% le\t% le\t% le\t% le\n",ListOfSites[k10].Location(0),ListOfSites[k10].Location(1),ListOfSites[k10].Location(2),real(avgX(0,0)),real(avgY(0,0)));
+            //cout<<"\n wave function "<<real(eigvec1.submat())<<"\n";
+            //cout<<"\n real part = "<<imag(avgX(0,0))<<"\n";
+        }
+        //cout<<"\nreal velocity vx = "<<real(Ix(0,0))<<"\t"<<"vy = "<<real(Iy(0,0))<<"\n";
+        //cout<<"\nimaginary velocity vx = "<<imag(Ix(0,0))<<"\t"<<"vy = "<<imag(Iy(0,0))<<"\n";
+    }
+    
+    fclose(fp);
+    
+}
+
+void ElectronSystem::CalculateVelocity2(void)
+{
+    FILE* fp;
+    fp = fopen("velocityField.txt","w");
+    int width = this->NumberOfSiteAlongX; //number of site along y
+    int length = this->NumberOfSiteAlongY; //number of site along x
+    double deltaX = this->delta; //interatomic distance along x direction
+    double deltaY = this->delta; //intteratomic distance along y direction
+    double hv = 3.2955e-10*0.5; //hbar*VF in electron volt
+    double gamma = 5e-10;
+    int totalNumberofSite = this->NumSite;
+    int numberOfSiteAlongX = this->NumberOfSiteAlongX;
+    int numberOfSiteAlongY = this->NumberOfSiteAlongY;
+    int iPlus1, iMinus1, jPlus1, jMinus1; //neighbour index for each site
+    
+    cx_mat Pauli_X(2,2);
+    cx_mat Pauli_Y(2,2);
+    cx_mat Pauli_Z(2,2);
+    Pauli_X.zeros();
+    Pauli_Y.zeros();
+    Pauli_Z.zeros();
+    Pauli_X(0,1) = 1.0;
+    Pauli_X(1,0) = 1.0;
+    Pauli_Y(0,1) = Complex(0.0, -1.0);
+    Pauli_Y(1,0) = Complex(0.0, 1.0);
+    Pauli_Z(0.0) = 1.0;
+    Pauli_Z(1,1) = -1.0;
+    
+    cx_mat tx(2,2);
+    cx_mat txhc(2,2);
+    cx_mat ty(2,2);
+    cx_mat tyhc(2,2);
+    
+    tx.zeros();
+    txhc.zeros();
+    ty.zeros();
+    tyhc.zeros();
+    
+    txhc = hv*((Complex(0.0, -1.0)/(2*deltaX))*(Pauli_Y)-(gamma/(deltaX*deltaX))*(Pauli_Z));
+    tx = trans(txhc);
+    tyhc = hv*((Complex(0.0, 1.0)/(2*deltaX))*(Pauli_X)-(gamma/(deltaX*deltaX))*(Pauli_Z));
+    ty = trans(tyhc);
+    double avgX, avgY;
+    cx_mat dummy1, dummy2, dummy3, dummy4;
+        
+    for(int k4=2495;k4<2506;k4++) // k4  =  k4 th eigenvalue
+    {    
+        for(int k10=0;k10<totalNumberofSite;k10++) //k10 = index of each site
+        {
+            //calculating velocity x component
+            if((k10%numberOfSiteAlongX)==0)
+            {
+                iPlus1 = k10+1;
+                iMinus1 = (k10+numberOfSiteAlongX)-1;       
+            }
+            else if(((k10+1)%numberOfSiteAlongX)==0)
+            {
+                iPlus1 = k10-(numberOfSiteAlongX-1);
+                iMinus1 = k10-1;  
+            }
+            else
+            {
+                iPlus1 = k10+1;
+                iMinus1 = k10-1;  
+            }
+            
+
+           // avgX = imag(trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*txhc*(this->eigvec.submat(iPlus1*2,k4,iPlus1*2+1,k4))) + 
+            //       imag(trans(this->eigvec.submat(iMinus1*2,k4,iMinus1*2+1,k4))*txhc*(this->eigvec.submat(k10*2,k4,k10*2+1,k4)));
+                   
+         
+            dummy1=  trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*Pauli_Z*txhc*(this->eigvec.submat(iPlus1*2,k4,iPlus1*2+1,k4));
+            dummy2 = trans(this->eigvec.submat(iMinus1*2,k4,iMinus1*2+1,k4))*Pauli_Z*txhc*(this->eigvec.submat(k10*2,k4,k10*2+1,k4));
+            avgX = imag(dummy1(0,0)) + imag(dummy2(0,0));
+            
+            
+            //For calculating spin current, insert Pauli_Z before txhc, tyhc
+            
+            //calculating velocity y component
+            if((k10-numberOfSiteAlongX)<0)
+            {
+                jPlus1 = k10+numberOfSiteAlongX;
+                jMinus1 = k10 + numberOfSiteAlongX*(numberOfSiteAlongX-1);       
+            }
+            else if((k10+numberOfSiteAlongX)>(totalNumberofSite-1))
+            {
+                jPlus1 = k10 - numberOfSiteAlongX*(numberOfSiteAlongX-1);
+                jMinus1 = k10-numberOfSiteAlongX;  
+            }
+            else
+            {
+                jPlus1 = k10+numberOfSiteAlongX;
+                jMinus1 = k10-numberOfSiteAlongX;  
+            }
+            
+            //avgY = imag(trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*tyhc*(this->eigvec.submat(jPlus1*2,k4,jPlus1*2+1,k4))) + 
+            //       imag(trans(this->eigvec.submat(jMinus1*2,k4,jMinus1*2+1,k4))*tyhc*(this->eigvec.submat(k10*2,k4,k10*2+1,k4)));
+            
+            
+            dummy3 = trans(this->eigvec.submat(k10*2,k4,k10*2+1,k4))*Pauli_Z*tyhc*(this->eigvec.submat(jPlus1*2,k4,jPlus1*2+1,k4));
+            dummy4 = trans(this->eigvec.submat(jMinus1*2,k4,jMinus1*2+1,k4))*Pauli_Z*tyhc*(this->eigvec.submat(k10*2,k4,k10*2+1,k4));
+            avgY = imag(dummy3(0,0)) + imag(dummy4(0,0));
+            
+            fprintf(fp, "% le\t% le\t% le\t% le\t% le\n",ListOfSites[k10].Location(0),ListOfSites[k10].Location(1),ListOfSites[k10].Location(2),(avgX),(avgY));
+
+ 
+        }
+    
+    }        
+            
+        fclose(fp);    
+}
+
 //////////////////////
+
+void ElectronSystem::CalculateTransmissionForEnergyRange(double Energy)
+{
+    FILE* fp;
+    fp = fopen("Xmission.txt","w");
+    for(double e= -Energy;e<= Energy;e=e+0.001)
+    {
+            this->CalculateGR(e);
+            cx_mat tc;
+            tc = this->Transmission(e);
+            cout<<"\n transmission matrix \n"<<tc<<"\n";
+            cout<<"\n transmission = "<<real(tc(0,1))<<"\n";
+            fprintf(fp, "% lf\t% lf\n", e,real(tc(0,1)));
+    }
+    
+    
+    fclose(fp);
+}
+
+
+
+void ElectronSystem::CalculateBoundState(void)
+{
+        FILE* fp1;
+        fp1 = fopen("EigenVauleSkx.txt","w");
+        FILE* fp2;
+        fp2 = fopen("Psi.txt","w");
+        cout<<"\n calculating Bound state \n";
+        eig_sym(this->eigval,this->eigvec,this->Hamiltonian);
+        
+        for(int k3=0;k3<this->eigval.n_rows;k3++)
+        {
+            fprintf(fp1, "% le\n",this->eigval(k3,0));
+        }
+   
+        for (int i22=0;i22<this->eigvec.n_rows;i22++)
+        {
+            for(int j22=0;j22<this->eigvec.n_cols;j22++)
+            {
+                fprintf(fp2, "% le\t", abs(this->eigvec(i22,j22))*abs(this->eigvec(i22,j22)));
+                
+            }
+                fprintf(fp2, "\n");
+    } 
+        
+        
+        fclose(fp1);
+        fclose(fp2);
+}
+
+
+void ElectronSystem::PrintReadInSkyrmionTexture(void)
+{
+    FILE* fp;
+    fp = fopen("SKXtexture.txt","w"); 
+    int totalNumberofSite = this->NumSite;
+    for(int k14=0;k14<totalNumberofSite;k14++)
+    {
+        fprintf(fp, "% le\t% le\t% le\t% le\t% le\t% le\n",ListOfSites[k14].Location(0),ListOfSites[k14].Location(1),ListOfSites[k14].Location(2),ListOfSites[k14].Spin(0),ListOfSites[k14].Spin(1),ListOfSites[k14].Spin(2));
+    }
+    fclose(fp);
+}
+
+
+
+
+
+
+
 cx_mat ElectronSystem::ThermalAverageTransmission(double Temperature, double Ef)
 {
     if (fabs(Temperature)<1.0e-7)
@@ -495,6 +1075,23 @@ cx_mat ElectronSystem::OnSiteSpectralFunctionFromBoundary(int I, int J, OpenBoun
     }
     return Aij;
 }
+
+
+cx_mat ElectronSystem::OnSiteSpectralFunctionA(int SiteI, int SiteJ)
+{
+    cx_mat A;
+    A.set_size(this->ListOfSites[SiteI].SiteBlockSize, this->ListOfSites[SiteJ].SiteBlockSize);
+    A.zeros();
+    for (int i=0; i<this->ListOfOpenBoundaries.size(); i++)
+    {
+        A = A + OnSiteSpectralFunctionFromBoundary(SiteI, SiteJ, ListOfOpenBoundaries[i]);
+                
+    }
+    return A;
+}
+
+
+
 ///
 cx_mat ElectronSystem::OnSiteCorelationFunctionGn(int SiteI, int SiteJ, double Ef)
 {

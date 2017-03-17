@@ -1,0 +1,1 @@
+this calculations are done for JH/t = 2 for 15A0 OR JH/t = 2/15 = 0.1333 for 1A0 for 30 SKX nanoribbon

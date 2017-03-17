@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurationDescriptor version="97">
+  <logicalFolder name="root" displayName="root" projectFiles="true" kind="ROOT">
+    <logicalFolder name="HeaderFiles"
+                   displayName="Header Files"
+                   projectFiles="true">
+      <itemPath>Calculations.hpp</itemPath>
+      <itemPath>ElectronSite.hpp</itemPath>
+      <itemPath>ElectronSystem.hpp</itemPath>
+      <itemPath>FiniteTemperature.hpp</itemPath>
+      <itemPath>InputOutput.hpp</itemPath>
+      <itemPath>LLG_Equation.hpp</itemPath>
+      <itemPath>MovieWindow.hpp</itemPath>
+      <itemPath>NeighborList.hpp</itemPath>
+      <itemPath>Nodes.hpp</itemPath>
+      <itemPath>OpenBoundary.hpp</itemPath>
+      <itemPath>SpinSystem.hpp</itemPath>
+      <itemPath>TopologicalCharge.hpp</itemPath>
+      <itemPath>randomc.h</itemPath>
+    </logicalFolder>
+    <logicalFolder name="ResourceFiles"
+                   displayName="Resource Files"
+                   projectFiles="true">
+    </logicalFolder>
+    <logicalFolder name="SourceFiles"
+                   displayName="Source Files"
+                   projectFiles="true">
+      <itemPath>Calculations.cpp</itemPath>
+      <itemPath>ElectronSite.cpp</itemPath>
+      <itemPath>ElectronSystem.cpp</itemPath>
+      <itemPath>FiniteTemperature.cpp</itemPath>
+      <itemPath>InputOutput.cpp</itemPath>
+      <itemPath>LLG_Equation.cpp</itemPath>
+      <itemPath>MovieWindow.cpp</itemPath>
+      <itemPath>NeighborList.cpp</itemPath>
+      <itemPath>Nodes.cpp</itemPath>
+      <itemPath>OpenBoundary.cpp</itemPath>
+      <itemPath>SpinSystem.cpp</itemPath>
+      <itemPath>TopologicalCharge.cpp</itemPath>
+      <itemPath>main.cpp</itemPath>
+      <itemPath>mersenne.cpp</itemPath>
+      <itemPath>userintf.cpp</itemPath>
+    </logicalFolder>
+    <logicalFolder name="TestFiles"
+                   displayName="Test Files"
+                   projectFiles="false"
+                   kind="TEST_LOGICAL_FOLDER">
+    </logicalFolder>
+    <logicalFolder name="ExternalFiles"
+                   displayName="Important Files"
+                   projectFiles="false"
+                   kind="IMPORTANT_FILES_FOLDER">
+      <itemPath>Makefile</itemPath>
+    </logicalFolder>
+  </logicalFolder>
+  <projectmakefile>Makefile</projectmakefile>
+  <confs>
+    <conf name="Debug" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <ccTool>
+          <incDir>
+            <pElem>/usr/local/dislin</pElem>
+          </incDir>
+        </ccTool>
+        <linkerTool>
+          <linkerAddLib>
+            <pElem>/usr/local/dislin</pElem>
+          </linkerAddLib>
+          <linkerDynSerch>
+            <pElem>/usr/local/dislin/lib</pElem>
+          </linkerDynSerch>
+          <commandLine>-larmadillo -lXm -ldiscpp -ldislin</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="Calculations.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Calculations.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ElectronSite.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ElectronSite.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ElectronSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ElectronSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FiniteTemperature.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FiniteTemperature.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="InputOutput.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="InputOutput.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="LLG_Equation.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="LLG_Equation.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MovieWindow.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MovieWindow.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="NeighborList.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="NeighborList.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Nodes.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Nodes.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="OpenBoundary.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="OpenBoundary.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SpinSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SpinSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TopologicalCharge.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TopologicalCharge.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="mersenne.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="randomc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="userintf.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+    </conf>
+    <conf name="Release" type="1">
+      <toolsSet>
+        <compilerSet>default</compilerSet>
+        <dependencyChecking>true</dependencyChecking>
+        <rebuildPropChanged>false</rebuildPropChanged>
+      </toolsSet>
+      <compileType>
+        <cTool>
+          <developmentMode>5</developmentMode>
+        </cTool>
+        <ccTool>
+          <developmentMode>5</developmentMode>
+          <incDir>
+            <pElem>/usr/local/dislin</pElem>
+            <pElem>/usr/local/armadillo6.1/include</pElem>
+          </incDir>
+        </ccTool>
+        <fortranCompilerTool>
+          <developmentMode>5</developmentMode>
+        </fortranCompilerTool>
+        <asmTool>
+          <developmentMode>5</developmentMode>
+        </asmTool>
+        <linkerTool>
+          <linkerAddLib>
+            <pElem>/usr/local/dislin</pElem>
+            <pElem>/usr/local/armadillo6.1/lib64</pElem>
+          </linkerAddLib>
+          <linkerDynSerch>
+            <pElem>/usr/local/dislin/lib</pElem>
+          </linkerDynSerch>
+          <commandLine>-larmadillo -ldiscpp</commandLine>
+        </linkerTool>
+      </compileType>
+      <item path="Calculations.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Calculations.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ElectronSite.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ElectronSite.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="ElectronSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="ElectronSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="FiniteTemperature.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="FiniteTemperature.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="InputOutput.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="InputOutput.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="LLG_Equation.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="LLG_Equation.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="MovieWindow.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="MovieWindow.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="NeighborList.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="NeighborList.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="Nodes.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="Nodes.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="OpenBoundary.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="OpenBoundary.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="SpinSystem.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="SpinSystem.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="TopologicalCharge.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="TopologicalCharge.hpp" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="main.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="mersenne.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="randomc.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="userintf.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+    </conf>
+  </confs>
+</configurationDescriptor>

@@ -15,12 +15,12 @@ class OpenBoundary
 public:
     std::vector<ElectronSite> ListOfBoundarySites;
     cx_mat F00;
-    cx_mat F01; // This sub-matrix couples the boundary sites to the lead.
+    cx_mat F01; // This sub-matrix couples the boundary sites to the lead.: FROM BOUNDARY TO LEAD
     cx_mat SelfEnergy;
     cx_mat Gamma;
     cx_mat HugeGamma;
     cx_mat SpectralFromThisBoundary;
-    int BoundaryIndex;
+    int BoundaryIndex;   //THIS WILL DIFFERENTIATE DIFFERENT BOUNDARY
     int TotalBoundaryMatrixSize;
     double ChemicalPotential;
     vec VirtualBoundaryShift;
